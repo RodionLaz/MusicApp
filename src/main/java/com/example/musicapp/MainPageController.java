@@ -51,7 +51,7 @@ public class MainPageController implements Initializable {
         SelectDisk SD = new SelectDisk();
         findMP3AndShow();
 
-        //organize();
+        organize();
         TrasfareBtn.setOnMouseClicked(event -> {;
             SD.show(SelectedFiles);
 

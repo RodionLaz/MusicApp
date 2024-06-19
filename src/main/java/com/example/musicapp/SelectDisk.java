@@ -20,7 +20,7 @@ import java.util.List;
 
 public class SelectDisk {
 
-    public static void listAllLocalStorages(VBox vbox,List<String> selectedFiles) {
+    public static void listAllLocalStorages(VBox vbox,List<String> selectedFiles,Stage stae) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File[] roots = File.listRoots();
 
@@ -88,7 +88,7 @@ public class SelectDisk {
 
 
                 }
-
+                stae.close();
             });
             vbox.getChildren().add(itemPane);
         }
@@ -102,7 +102,7 @@ public class SelectDisk {
 
         VBox vbox = new VBox(10);
         vbox.setStyle("-fx-padding: 10;");
-        listAllLocalStorages(vbox,selectedFiles);
+        listAllLocalStorages(vbox,selectedFiles,popupStage);
 
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> popupStage.close());
