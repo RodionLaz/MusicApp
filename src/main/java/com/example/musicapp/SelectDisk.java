@@ -2,25 +2,36 @@ package com.example.musicapp;
 
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.Mp3File;
+import com.mpatric.mp3agic.UnsupportedTagException;
+import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.concurrent.Task;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SelectDisk {
+    ThreadGroup group = new ThreadGroup("Transfares");
+    private Task<Void> copyTask;
+    private AtomicBoolean isPaused = new AtomicBoolean(false);
 
-    public static void listAllLocalStorages(VBox vbox,List<String> selectedFiles,Stage stae) {
+    public void listAllLocalStorages(VBox vbox,List<String> selectedFiles,Stage stae,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File[] roots = File.listRoots();
 
@@ -47,62 +58,114 @@ public class SelectDisk {
             driveInfoBox.getChildren().addAll(label, label2);
 
             itemPane.getChildren().add(driveInfoBox);
-            itemPane.setOnMouseClicked(event-> {
+            itemPane.setOnMouseClicked(event -> {
                 System.out.println("Clicked");
-                for (String f : selectedFiles) {
-                    Path source = Paths.get(f);
-                    System.out.println("path : " + f);
-                    System.out.println("Root : " + root.getPath());
-
-                    try {
-                        System.out.println("Source : " + source);
-
-                        Mp3File mp3info = new Mp3File(source);
-
-                        if (mp3info.hasId3v2Tag()) {
-                            ID3v2 id3v2Tag = mp3info.getId3v2Tag();
-                            String artist = id3v2Tag.getArtist();
-                            String album = id3v2Tag.getAlbum();
-
-                            // Create target directory path using Path
-                            Path targetDir = Paths.get(root.getPath() + "/Music", artist, album);
-
-                            // Check if the directory exists
-                            if (!Files.exists(targetDir)) {
-                                // Create directories if they don't exist using Files.createDirectories
-                                Files.createDirectories(targetDir);
-                                System.out.println("Directory created successfully: " + targetDir);
-                            }
-
-                            // Construct the target file path within the directory
-                            Path target = targetDir.resolve(source.getFileName());
-
-                            // Copy the file using Files.copy with REPLACE_EXISTING
-                            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                            System.out.println("File copied (replacing if existed): " + target);
-                        }
-                        System.out.println("DONE");
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                transferButton.setOnAction(e -> {
+                    if (copyTask == null || copyTask.isDone()) {
+                        transfare(selectedFiles, root, percentageLabel, cancelButton, pauseButton, progressBar, currentSongLabel);
+                    } else {
+                        isPaused.set(!isPaused.get());
                     }
+                });
+                pauseButton.setOnMouseClicked(e3-> {
+                    isPaused.set(!isPaused.get());
+                });
+                cancelButton.setOnAction(e2 -> {
+                    if (copyTask != null) {
+                        copyTask.cancel();
+                        percentageLabel.textProperty().unbind();
+                        percentageLabel.setText("0%");
+                        progressBar.progressProperty().unbind();
+                        progressBar.setProgress(0.0);
 
+                    }
+                });
 
-                }
-                stae.close();
+                Stage stage = (Stage) itemPane.getScene().getWindow(); // Assuming itemPane is in a Stage
+                stage.close();
+                transfare(selectedFiles, root, percentageLabel, cancelButton, pauseButton, progressBar, currentSongLabel);
             });
             vbox.getChildren().add(itemPane);
         }
 
 
     }
+    public void transfare(List<String> selectedSongs, File root, Label percentageLabel, Button cancelButton, Button pauseButton, ProgressBar progressBar, Label currentSongLabel) {
+        List<File> selectedSongsFile = new ArrayList<>();
+        for (String songPath : selectedSongs) {
+            File songFile = new File(songPath);
+            selectedSongsFile.add(songFile);
+        }
 
-    public void show(List<String> selectedFiles) {
+        copyTask = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                long totalSize = selectedSongsFile.stream().mapToLong(File::length).sum();
+                long copiedSize = 0;
+
+                for (File file : selectedSongsFile) {
+                    if (isCancelled()) {
+                        break;
+                    }
+
+                    while (isPaused.get()) {
+                        Thread.sleep(100);
+                    }
+
+                    Path sourcePath = file.toPath();
+                    try {
+                        Mp3File mp3file = new Mp3File(file.getPath());
+                        if (mp3file.hasId3v2Tag()) {
+                            ID3v2 id3v2Tag = mp3file.getId3v2Tag();
+                            String artist = id3v2Tag.getArtist();
+                            String album = id3v2Tag.getAlbum();
+
+                            // Construct target directory path
+                            Path targetDir = Paths.get(root.getPath(), "Music", artist, album);
+
+                            // Check if the directory exists, create if not
+                            if (!Files.exists(targetDir)) {
+                                Files.createDirectories(targetDir);
+                                System.out.println("Directory created successfully: " + targetDir);
+                            }
+
+                            // Construct target file path
+                            Path targetPath = targetDir.resolve(sourcePath.getFileName());
+
+                            // Copy file
+                            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            copiedSize += Files.size(sourcePath);
+
+                            // Update progress
+                            updateProgress(copiedSize, totalSize);
+                            updateMessage(file.getName());
+
+                            // Simulate copy delay
+                            Thread.sleep(500);
+                        }
+                    } catch (IOException | UnsupportedTagException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+            }
+        };
+
+        // Bind UI elements to task properties
+        progressBar.progressProperty().bind(copyTask.progressProperty());
+        currentSongLabel.textProperty().bind(copyTask.messageProperty());
+        percentageLabel.textProperty().bind(copyTask.progressProperty().multiply(100).asString("%.0f%%"));
+
+
+        new Thread(copyTask).start();
+    }
+    public void show(List<String> selectedFiles,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
         Stage popupStage = new Stage();
         popupStage.initModality(Modality.APPLICATION_MODAL);
 
         VBox vbox = new VBox(10);
         vbox.setStyle("-fx-padding: 10;");
-        listAllLocalStorages(vbox,selectedFiles,popupStage);
+        listAllLocalStorages(vbox,selectedFiles,popupStage,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
 
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> popupStage.close());

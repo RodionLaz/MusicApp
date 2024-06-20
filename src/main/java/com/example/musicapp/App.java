@@ -29,8 +29,8 @@ public class App extends Application {
             primaryStage.show();
 
         } catch (IOException e) {
-           // e.printStackTrace();
-            // Handle or log the exception as needed
+           e.printStackTrace();
+
         }
     }
     public static void main(String[] args) {

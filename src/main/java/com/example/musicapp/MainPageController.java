@@ -2,9 +2,7 @@ package com.example.musicapp;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.TilePane;
 
@@ -14,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +29,17 @@ import javax.swing.filechooser.FileSystemView;
 
 public class MainPageController implements Initializable {
 
-    private static final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
+    @FXML
+    public Label currentSongLabel;
+    private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
     @FXML
     private ScrollPane scrollPane;
     @FXML
-    private Button TrasfareBtn;
+    private Label percentageLabel;
+    @FXML
+    private Button transferButton,cancelButton,pauseButton;
+    @FXML
+    private ProgressBar progressBar;
     @FXML
     private TilePane contentPane;
     public List<String> SelectedFiles = new ArrayList<>();
@@ -51,12 +54,13 @@ public class MainPageController implements Initializable {
         SelectDisk SD = new SelectDisk();
         findMP3AndShow();
 
-        organize();
-        TrasfareBtn.setOnMouseClicked(event -> {;
-            SD.show(SelectedFiles);
+        //organize();
+        transferButton.setOnMouseClicked(event -> {;
+            SD.show(SelectedFiles,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
 
         });
     }
+
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
     }
@@ -69,10 +73,10 @@ public class MainPageController implements Initializable {
 
         // Label for the main text
         Label label = new Label(labelText);
-        label.setLayoutX(10); // Adjust label position as needed
+        label.setLayoutX(10);
         label.setLayoutY(10);
-        label.setMaxWidth(280); // Limit label width
-        label.setWrapText(true); // Wrap text if it exceeds the width
+        label.setMaxWidth(280);
+        label.setWrapText(true);
         itemPane.getChildren().add(label);
 
         // Label for ArtistName
@@ -93,6 +97,11 @@ public class MainPageController implements Initializable {
         yearLabel.setLayoutY(70);
         itemPane.getChildren().add(yearLabel);
 
+        // CheckBox for selection
+        CheckBox checkBox = new CheckBox();
+        checkBox.setLayoutX(10); // Adjust CheckBox position as needed
+        checkBox.setLayoutY(10);
+        itemPane.getChildren().add(checkBox);
 
         itemPane.setOnMouseClicked(event -> {
             boolean found = false;
@@ -108,9 +117,11 @@ public class MainPageController implements Initializable {
 
             if (found) {
                 SelectedFiles.removeAll(pathsToRemove);
+                checkBox.setSelected(false);
             } else {
                 System.out.println("Not found in list, adding: " + path);
                 SelectedFiles.add(path);
+                checkBox.setSelected(true);
             }
         });
 
@@ -250,7 +261,7 @@ public class MainPageController implements Initializable {
                                 albumDir.mkdirs();
                             }
 
-                            File targetFile = new File(albumDir, file.getName());
+                            File targetFile = new File(albumDir,sanitizeFileName(file.getName()));
                             if (!targetFile.exists()) {
                                 Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                                 LOGGER.info("Moved file: " + file.getName() + " to " + targetFile.getPath());

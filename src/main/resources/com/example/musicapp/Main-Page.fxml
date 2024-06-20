@@ -7,12 +7,14 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ProgressBar?>
 
+<?import javafx.scene.control.Label?>
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicapp.MainPageController">
     <top>
-        <VBox BorderPane.alignment="CENTER">
+        <VBox alignment="CENTER" BorderPane.alignment="CENTER">
             <children>
-                <HBox prefHeight="100.0" prefWidth="200.0">
+                <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
                     <children>
                         <TextField alignment="CENTER" prefHeight="25.0" prefWidth="217.0" />
                         <Button mnemonicParsing="false" text="Button" />
@@ -28,11 +30,28 @@
             </content>
         </ScrollPane>
     </center>
-   <bottom>
-      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-         <children>
-            <Button fx:id="TrasfareBtn" mnemonicParsing="false" prefHeight="25.0" prefWidth="270.0" text="Transfare" />
-         </children>
-      </HBox>
-   </bottom>
+    <bottom>
+        <VBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+            <children>
+                <HBox alignment="CENTER" spacing="10">
+                    <children>
+                        <Label fx:id="currentSongLabel" text="Current song: " />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER" spacing="10">
+                    <children>
+                        <Label fx:id="percentageLabel" text="0%" />
+                        <ProgressBar fx:id="progressBar" prefWidth="200.0" />
+                        <Button fx:id="cancelButton" text="Cancel" />
+                        <Button fx:id="pauseButton" text="pause" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER">
+                    <children>
+                        <Button fx:id="transferButton" mnemonicParsing="false" prefHeight="25.0" prefWidth="270.0" text="Transfer" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </bottom>
 </BorderPane>
