@@ -13,9 +13,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,78 +28,225 @@ import javax.swing.filechooser.FileSystemView;
 public class MainPageController implements Initializable {
 
     @FXML
-    public Label currentSongLabel;
-    private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
+    private Label currentSongLabel;
+
     @FXML
     private ScrollPane scrollPane;
+
     @FXML
     private Label percentageLabel;
     @FXML
-    private Button transferButton,cancelButton,pauseButton;
-    @FXML
     private ProgressBar progressBar;
+
     @FXML
     private TilePane contentPane;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Label texttexttext;
+    @FXML
+    private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton;
+
+
     public List<String> SelectedFiles = new ArrayList<>();
-
+    public List<Song> songs = new ArrayList<>();
+    private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
     private Stage primaryStage;
-
+    private String currentShow =  "Songs";
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
         SelectDisk SD = new SelectDisk();
-        findMP3AndShow();
 
+        //songs = findMP3();
+        showitemsBySongsOrder();
+        searchButton.setOnMouseClicked(event -> {
+            String Search = searchField.getText();
+            if(searchField.getText().isEmpty()){
+                songs = findMP3();
+                showitemsBySongsOrder();
+                return;
+            }
+            songs = searchSongs(songs,Search);
+            switch (currentShow){
+                case "Songs":
+                    showitemsBySongsOrder();
+                    System.out.println("showing by Songs");
+                    break;
+                case "Albums":
+                    showitemsByAlbumsOrder();
+                    System.out.println("showing by Albums");
+                    break;
+                case "Arsits":
+                    showitemsByArtsitsOrder();
+                    System.out.println("showing by Arsits");
+                    break;
+                default:
+                    System.out.println("showing by Songs");
+                    showitemsBySongsOrder();
+                    break;
+            }
+
+
+        });
+        if(searchField.getText().isEmpty()){
+            songs = findMP3();
+            showitemsBySongsOrder();
+        }
         //organize();
-        transferButton.setOnMouseClicked(event -> {;
+        transferButton.setOnMouseClicked(event -> {
             SD.show(SelectedFiles,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
 
         });
+        sortByAlbumButton.setOnMouseClicked(event -> {
+            currentShow = "Albums";
+            showitemsByAlbumsOrder();
+        });
+        sortByArtistButton.setOnMouseClicked(event -> {
+            currentShow = "Arsits";
+            showitemsByArtsitsOrder();
+        });
+        sortBySongButton.setOnMouseClicked(event -> {
+            currentShow = "Songs";
+            showitemsBySongsOrder();
+        });
     }
 
+
+    public List<Song> searchSongs(List<Song> songs, String searchText) {
+        List<Song> results = new ArrayList<>();
+
+        String searchLower = searchText.toLowerCase();
+
+        for (Song song : songs) {
+            if (song.getSongName().toLowerCase().contains(searchLower) ||
+                    song.getArtistName().toLowerCase().contains(searchLower) ||
+                    song.getAlbumName().toLowerCase().contains(searchLower) ||
+                    song.getYear().toLowerCase().contains(searchLower)) {
+                results.add(song);
+            }
+        }
+
+        return results;
+    }
+    public void showitemsBySongsOrder() {
+        if (songs == null) {
+            System.out.println("songs list is null");
+            return; // Or handle the null case as needed
+        }
+
+        try {
+            songs.sort(Comparator.comparing(Song::getSongName));
+            songs = removeDuplicates(songs);
+            contentPane.getChildren().clear();
+            for (Song song : songs) {
+                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+            }
+        } catch (NullPointerException e) {
+            System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for detailed error analysis
+        }
+    }
+    public void showitemsByArtsitsOrder() {
+        if (songs == null) {
+            System.out.println("songs list is null");
+            return; // Or handle the null case as needed
+        }
+
+        try {
+            songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
+            songs = removeDuplicates(songs);
+            contentPane.getChildren().clear();
+            for (Song song : songs) {
+                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+            }
+        } catch (NullPointerException e) {
+            System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for detailed error analysis
+        }
+    }
+    public void showitemsByAlbumsOrder() {
+        if (songs == null) {
+            System.out.println("songs list is null");
+            return; // Or handle the null case as needed
+        }
+
+        try {
+            contentPane.getChildren().clear();
+            songs.sort(Comparator.comparing(Song::getAlbumName,Comparator.nullsLast(Comparator.naturalOrder())));
+            songs = removeDuplicates(songs);
+            for (Song song : songs) {
+                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+            }
+        } catch (NullPointerException e) {
+            System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for detailed error analysis
+        }
+    }
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
     }
+    // Function to remove duplicates based on songName
+    public static List<Song> removeDuplicates(List<Song> songs) {
+        Set<String> seenNames = new LinkedHashSet<>(); // LinkedHashSet preserves insertion order
+        List<Song> uniqueSongs = new ArrayList<>();
 
+        for (Song song : songs) {
+            if (seenNames.add(song.getSongName())) { // Add returns true if the name was not already present
+                uniqueSongs.add(song);
+            }
+        }
+
+        return uniqueSongs;
+    }
     public void addItem(String labelText, String artistName, String album, String year, String path) {
-        // Create a new Pane to hold the item
         Pane itemPane = new Pane();
         itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
-        itemPane.setPrefSize(300, 100); // Adjust size as per your content
+        itemPane.setPrefSize(350, 120); // Adjust size as per your content
 
-        // Label for the main text
-        Label label = new Label(labelText);
-        label.setLayoutX(10);
+        // CheckBox for selection
+        CheckBox checkBox = new CheckBox();
+        checkBox.setLayoutX(130); // Adjust CheckBox position as needed
+        checkBox.setLayoutY(80); // Adjust CheckBox position as needed
+        itemPane.getChildren().add(checkBox);
+
+        // Label for the main text (Song)
+        Label label = new Label("Song: " + labelText);
+        label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
         label.setLayoutY(10);
-        label.setMaxWidth(280);
+        label.setMaxWidth(310); // Adjust Label width based on CheckBox position
         label.setWrapText(true);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
         itemPane.getChildren().add(label);
 
         // Label for ArtistName
         Label artistLabel = new Label("Artist: " + artistName);
-        artistLabel.setLayoutX(10);
+        artistLabel.setLayoutX(30);
         artistLabel.setLayoutY(30);
+        artistLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        artistLabel.setWrapText(true);
+        artistLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
         itemPane.getChildren().add(artistLabel);
 
         // Label for Album
         Label albumLabel = new Label("Album: " + album);
-        albumLabel.setLayoutX(10);
+        albumLabel.setLayoutX(30);
         albumLabel.setLayoutY(50);
+        albumLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        albumLabel.setWrapText(true);
+        albumLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
         itemPane.getChildren().add(albumLabel);
 
         // Label for Year
         Label yearLabel = new Label("Year: " + year);
-        yearLabel.setLayoutX(10);
+        yearLabel.setLayoutX(30);
         yearLabel.setLayoutY(70);
+        yearLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        yearLabel.setWrapText(true);
+        yearLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
         itemPane.getChildren().add(yearLabel);
-
-        // CheckBox for selection
-        CheckBox checkBox = new CheckBox();
-        checkBox.setLayoutX(10); // Adjust CheckBox position as needed
-        checkBox.setLayoutY(10);
-        itemPane.getChildren().add(checkBox);
 
         itemPane.setOnMouseClicked(event -> {
             boolean found = false;
@@ -131,7 +276,8 @@ public class MainPageController implements Initializable {
 
 
 
-    public void findMP3AndShow() {
+    public List<Song> findMP3() {
+        List<Song> songs = new ArrayList<>();
         JFileChooser fileChooser = new JFileChooser();
         FileSystemView fileSystemView = fileChooser.getFileSystemView();
         // Get the default music directory
@@ -149,8 +295,10 @@ public class MainPageController implements Initializable {
                 Mp3File mp3info = new Mp3File(mp3File.getPath());
                 if (mp3info.hasId3v2Tag()) {
                     ID3v2 id3v2Tag = mp3info.getId3v2Tag();
-                    addItem(id3v2Tag.getTrack(), id3v2Tag.getArtist(), id3v2Tag.getAlbum(),
+                    Song song = new Song(id3v2Tag.getTitle(), id3v2Tag.getArtist(), id3v2Tag.getAlbum(),
                             id3v2Tag.getYear(), mp3File.getPath());
+                    songs.add(song);
+
                 }
             } catch (InvalidDataException e) {
                 LOGGER.log(Level.SEVERE, "InvalidDataException: No MPEG frames found in file: " + mp3File.getPath(), e);
@@ -160,7 +308,9 @@ public class MainPageController implements Initializable {
                 LOGGER.log(Level.SEVERE, "IOException: " + e.getMessage(), e);
             }
         }
+        return songs;
     }
+
 
     private void searchForMP3s(File directory, List<File> mp3Files) {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
@@ -189,23 +339,7 @@ public class MainPageController implements Initializable {
     private String sanitizeFileName(String name) {
         return name.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
-    public void test(){
 
-        String musicDirectoryPath =  System.getProperty("user.home") + File.separator + "Music";
-        File directory = new File(musicDirectoryPath);
-
-        File[] files = directory.listFiles();
-        try{
-            Mp3File mp3file = new Mp3File(files[3].getPath());
-            ID3v2 id3v2Tag = mp3file.getId3v2Tag();
-            String artist = id3v2Tag.getArtist();
-            System.out.println("Artists : "+artist);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-
-    }
     public void organize() {
         String musicDirectoryPath = System.getProperty("user.home") + File.separator + "Music";
         File musicDirectory = new File(musicDirectoryPath);
