@@ -2,6 +2,7 @@ package com.example.musicapp;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.TilePane;
@@ -19,7 +20,9 @@ import java.util.logging.Logger;
 
 
 import com.mpatric.mp3agic.*;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import javax.swing.*;
@@ -53,19 +56,18 @@ public class MainPageController implements Initializable {
     private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
     private Stage primaryStage;
     private String currentShow =  "Songs";
+    private String SelectedPath;
+    private Map<String, Boolean> checkboxStateMap = new HashMap<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
         SelectDisk SD = new SelectDisk();
 
-        //songs = findMP3();
         showitemsBySongsOrder();
         searchButton.setOnMouseClicked(event -> {
             String Search = searchField.getText();
             if(searchField.getText().isEmpty()){
-                songs = findMP3();
+                songs = findMP3(SelectedPath);
                 showitemsBySongsOrder();
                 return;
             }
@@ -91,9 +93,36 @@ public class MainPageController implements Initializable {
 
 
         });
-        if(searchField.getText().isEmpty()){
-            songs = findMP3();
-            showitemsBySongsOrder();
+        while (songs.isEmpty()){
+            Stage noSongsPopUp = new Stage();
+            noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
+
+            VBox vbox = new VBox(10);
+            vbox.setStyle("-fx-padding: 10;");
+            Label text = new Label("Select the folder with songs");
+            Button btn = new Button("Select Folder");
+            noSongsPopUp.setTitle("No Songs Found");
+            vbox.getChildren().addAll(text, btn);
+            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            noSongsPopUp.setScene(scene);
+            btn.setOnAction(e -> {
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setTitle("Select Folder");
+                directoryChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Music"));
+                File selectedDirectory = directoryChooser.showDialog(primaryStage);
+
+                if (selectedDirectory != null) {
+                    System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
+                    SelectedPath = selectedDirectory.getAbsolutePath();
+                    songs = findMP3(selectedDirectory.getAbsolutePath());
+                    showitemsBySongsOrder();
+                    noSongsPopUp.close(); // Close the popup after selecting the folder
+                } else {
+                    System.out.println("No Directory selected");
+                }
+            });
+
+            noSongsPopUp.showAndWait();
         }
         //organize();
         transferButton.setOnMouseClicked(event -> {
@@ -156,17 +185,22 @@ public class MainPageController implements Initializable {
         }
 
         try {
+            List<String> ArtsitsSongs = new ArrayList<>();
             songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
             songs = removeDuplicates(songs);
             contentPane.getChildren().clear();
             for (Song song : songs) {
-                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+                if(!ArtsitsSongs.contains(song)){
+                    addItemArtist(song.getArtistName());
+                }
+
             }
         } catch (NullPointerException e) {
             System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
             e.printStackTrace(); // Print stack trace for detailed error analysis
         }
     }
+
     public void showitemsByAlbumsOrder() {
         if (songs == null) {
             System.out.println("songs list is null");
@@ -174,11 +208,15 @@ public class MainPageController implements Initializable {
         }
 
         try {
-            contentPane.getChildren().clear();
-            songs.sort(Comparator.comparing(Song::getAlbumName,Comparator.nullsLast(Comparator.naturalOrder())));
+            List<String> ArtsitsSongs = new ArrayList<>();
+            songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
             songs = removeDuplicates(songs);
+            contentPane.getChildren().clear();
             for (Song song : songs) {
-                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+                if(!ArtsitsSongs.contains(song)){
+                    addItemAlbum(song.getAlbumName());
+                }
+
             }
         } catch (NullPointerException e) {
             System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
@@ -248,6 +286,13 @@ public class MainPageController implements Initializable {
         yearLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
         itemPane.getChildren().add(yearLabel);
 
+        // Set the initial state of the CheckBox from the map
+        checkBox.setSelected(checkboxStateMap.getOrDefault(path, false));
+
+        // Update the map when the CheckBox state changes
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            checkboxStateMap.put(path, newValue);
+        });
         itemPane.setOnMouseClicked(event -> {
             boolean found = false;
             List<String> pathsToRemove = new ArrayList<>();
@@ -273,16 +318,216 @@ public class MainPageController implements Initializable {
         // Add the itemPane to the contentPane
         contentPane.getChildren().add(itemPane);
     }
+    public void addItemArtist( String artistName) {
+        Pane itemPane = new Pane();
+        itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
+        itemPane.setPrefSize(350, 120); // Adjust size as per your content
 
 
 
-    public List<Song> findMP3() {
+        // Label for the main text (Song)
+        Label label = new Label("Artist: " + artistName);
+        label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
+        label.setLayoutY(10);
+        label.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        label.setWrapText(true);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+        itemPane.getChildren().add(label);
+
+
+
+        itemPane.setOnMouseClicked(event -> {
+            Stage popupStage = new Stage();
+            popupStage.initModality(Modality.APPLICATION_MODAL);
+            popupStage.setTitle("Songs by " + artistName);
+
+            VBox vbox = new VBox(10);
+            vbox.setStyle("-fx-padding: 10;");
+
+            for (Song song : songs) {
+                if (song.getArtistName().equals(artistName)) {
+                    TilePane itemPane2 = new TilePane();
+                    itemPane2.setPrefColumns(1);
+                    itemPane2.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
+                    itemPane2.setPrefSize(300, 100);
+
+                    // Label for the main text (Song)
+                    Label label2 = new Label("Song: " + song.getSongName());
+                    label2.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    label2.setWrapText(true);
+                    label2.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+                    itemPane2.getChildren().add(label2);
+
+                    // Label for ArtistName
+                    Label artistLabel = new Label("Artist: " + artistName);
+                    artistLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    artistLabel.setWrapText(true);
+                    artistLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+                    itemPane2.getChildren().add(artistLabel);
+
+                    // Label for Album
+                    Label albumLabel = new Label("Album: " + song.getAlbumName());
+                    albumLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    albumLabel.setWrapText(true);
+                    albumLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+                    itemPane2.getChildren().add(albumLabel);
+
+                    // CheckBox for selection
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.setLayoutX(130); // Adjust CheckBox position as needed
+                    checkBox.setLayoutY(80); // Adjust CheckBox position as needed
+                    itemPane2.getChildren().add(checkBox);
+
+                    // Set the initial state of the CheckBox from the map
+                    checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false));
+
+                    // Update the map when the CheckBox state changes
+                    checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                        checkboxStateMap.put(song.getPath(), newValue);
+                    });
+                    itemPane2.setOnMouseClicked(e -> {
+                        boolean found = false;
+                        List<String> pathsToRemove = new ArrayList<>();
+
+                        for (String filePath : SelectedFiles) {
+                            if (filePath.equals(song.getPath())) {
+                                System.out.println("Found in list, removing: " + song.getPath());
+                                pathsToRemove.add(filePath);
+                                found = true;
+                            }
+                        }
+
+                        if (found) {
+                            SelectedFiles.removeAll(pathsToRemove);
+                            checkBox.setSelected(false);
+                        } else {
+                            System.out.println("Not found in list, adding: " + song.getPath());
+                            SelectedFiles.add(song.getPath());
+                            checkBox.setSelected(true);
+                        }
+
+                    });
+
+                    vbox.getChildren().add(itemPane2);
+                }
+            }
+
+            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            popupStage.setScene(scene);
+            popupStage.showAndWait();
+        });
+
+
+        contentPane.getChildren().add(itemPane);
+    }
+    public void addItemAlbum( String albumName) {
+        Pane itemPane = new Pane();
+        itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
+        itemPane.setPrefSize(350, 120); // Adjust size as per your content
+
+
+
+        // Label for the main text (Song)
+        Label label = new Label("Album: " + albumName);
+        label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
+        label.setLayoutY(10);
+        label.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        label.setWrapText(true);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+        itemPane.getChildren().add(label);
+
+
+
+
+        itemPane.setOnMouseClicked(event -> {
+            Stage popupStage = new Stage();
+            popupStage.initModality(Modality.APPLICATION_MODAL);
+            popupStage.setTitle("Songs From  " + albumName);
+
+            VBox vbox = new VBox(10);
+            vbox.setStyle("-fx-padding: 10;");
+
+            for (Song song : songs) {
+                if (song.getAlbumName().equals(albumName)) {
+                    TilePane itemPane2 = new TilePane();
+                    itemPane2.setPrefColumns(1);
+                    itemPane2.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
+                    itemPane2.setPrefSize(300, 100);
+
+                    // Label for the main text (Song)
+                    Label label2 = new Label("Song: " + song.getSongName());
+                    label2.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    label2.setWrapText(true);
+                    label2.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+                    itemPane2.getChildren().add(label2);
+
+                    // Label for ArtistName
+                    Label artistLabel = new Label("Artist: " + song.getArtistName());
+                    artistLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    artistLabel.setWrapText(true);
+                    artistLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+                    itemPane2.getChildren().add(artistLabel);
+
+                    // Label for Album
+                    Label albumLabel = new Label("Album: " + song.getAlbumName());
+                    albumLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+                    albumLabel.setWrapText(true);
+                    albumLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+                    itemPane2.getChildren().add(albumLabel);
+
+                    // CheckBox for selection
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.setLayoutX(130); // Adjust CheckBox position as needed
+                    checkBox.setLayoutY(80); // Adjust CheckBox position as needed
+                    itemPane2.getChildren().add(checkBox);
+                    // Set the initial state of the CheckBox from the map
+                    checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false));
+
+                    // Update the map when the CheckBox state changes
+                    checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                        checkboxStateMap.put(song.getPath(), newValue);
+                    });
+                    itemPane2.setOnMouseClicked(e -> {
+                        boolean found = false;
+                        List<String> pathsToRemove = new ArrayList<>();
+
+                        for (String filePath : SelectedFiles) {
+                            if (filePath.equals(song.getPath())) {
+                                System.out.println("Found in list, removing: " + song.getPath());
+                                pathsToRemove.add(filePath);
+                                found = true;
+                            }
+                        }
+
+                        if (found) {
+                            SelectedFiles.removeAll(pathsToRemove);
+                            checkBox.setSelected(false);
+                        } else {
+                            System.out.println("Not found in list, adding: " + song.getPath());
+                            SelectedFiles.add(song.getPath());
+                            checkBox.setSelected(true);
+                        }
+
+                    });
+
+                    vbox.getChildren().add(itemPane2);
+                }
+            }
+
+            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            popupStage.setScene(scene);
+            popupStage.showAndWait();
+        });
+
+
+        contentPane.getChildren().add(itemPane);
+    }
+
+
+    public List<Song> findMP3(String directoryPath) {
         List<Song> songs = new ArrayList<>();
         JFileChooser fileChooser = new JFileChooser();
         FileSystemView fileSystemView = fileChooser.getFileSystemView();
-        // Get the default music directory
-        String directoryPath = System.getProperty("user.home") + File.separator + "Music";
-
         LOGGER.info("Default Music Directory: " + directoryPath);
         List<File> mp3Files = new ArrayList<>();
 

@@ -14,6 +14,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.concurrent.Task;
+import org.usb4java.*;
+
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
@@ -26,17 +28,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 public class SelectDisk {
     ThreadGroup group = new ThreadGroup("Transfares");
     private Task<Void> copyTask;
     private AtomicBoolean isPaused = new AtomicBoolean(false);
+    private HotplugCallbackHandle callbackHandle;
+    private Context context;
 
-    public void listAllLocalStorages(VBox vbox,List<String> selectedFiles,Stage stae,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
+    private VBox vbox;
+    private Stage stage;
+    private Label percentageLabel;
+    private Button cancelButton;
+    private Button pauseButton;
+    private ProgressBar progressBar;
+    private Label currentSongLabel;
+    private Button transferButton;
+    private List<String> selectedFiles;
+
+    public void listAllLocalStorages(List<String> selectedFiles) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File[] roots = File.listRoots();
 
-
         for (File root : roots) {
+            if (root.getPath().equals("C:\\")) {
+                continue; // Skip processing for C:\ drive
+            }
             TilePane itemPane = new TilePane();
             itemPane.setPrefColumns(1);
             itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
@@ -81,7 +98,7 @@ public class SelectDisk {
                     }
                 });
 
-                Stage stage = (Stage) itemPane.getScene().getWindow(); // Assuming itemPane is in a Stage
+                Stage stage = (Stage) itemPane.getScene().getWindow();
                 stage.close();
                 transfare(selectedFiles, root, percentageLabel, cancelButton, pauseButton, progressBar, currentSongLabel);
             });
@@ -90,6 +107,63 @@ public class SelectDisk {
 
 
     }
+
+    public void listenForUSBEvents() {
+
+        context = new Context();
+
+        try {
+            // Initialize the context
+            int result = LibUsb.init(context);
+            if (result != LibUsb.SUCCESS) {
+                throw new LibUsbException("Unable to initialize libusb", result);
+            }
+
+            // Check if hotplug is supported
+            if (!LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
+                System.out.println("libusb does not support hotplug on this system");
+                return;
+            }
+
+            // Register the hotplug callback
+            callbackHandle = new HotplugCallbackHandle();
+            result = LibUsb.hotplugRegisterCallback(
+                    context,
+                    LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
+                    LibUsb.HOTPLUG_ENUMERATE,
+                    LibUsb.HOTPLUG_MATCH_ANY,
+                    LibUsb.HOTPLUG_MATCH_ANY,
+                    LibUsb.HOTPLUG_MATCH_ANY,
+                    new HotplugCallback() { // Explicitly implementing HotplugCallback
+                        @Override
+                        public int processEvent(Context context, Device device, int event, Object userData) {
+                            if (event == LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED) {
+                                System.out.println("Device connected: " + device);
+                                listAllLocalStorages(selectedFiles);
+
+                            } else if (event == LibUsb.HOTPLUG_EVENT_DEVICE_LEFT) {
+                                System.out.println("Device disconnected: " + device);
+                                listAllLocalStorages(selectedFiles);
+
+                            }
+                            return 0;
+                        }
+                    },
+                    null,
+                    callbackHandle
+            );
+
+            if (result != LibUsb.SUCCESS) {
+                throw new LibUsbException("Unable to register hotplug callback", result);
+            }
+
+        } finally {
+            // Close the USB context
+            LibUsb.exit(context);
+        }
+    }
+
+
     public void transfare(List<String> selectedSongs, File root, Label percentageLabel, Button cancelButton, Button pauseButton, ProgressBar progressBar, Label currentSongLabel) {
         List<File> selectedSongsFile = new ArrayList<>();
         for (String songPath : selectedSongs) {
@@ -163,10 +237,18 @@ public class SelectDisk {
         Stage popupStage = new Stage();
         popupStage.initModality(Modality.APPLICATION_MODAL);
 
-        VBox vbox = new VBox(10);
-        vbox.setStyle("-fx-padding: 10;");
-        listAllLocalStorages(vbox,selectedFiles,popupStage,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
-
+        VBox vbox2 = new VBox(10);
+        vbox2.setStyle("-fx-padding: 10;");
+        vbox = vbox2;
+        this.percentageLabel = percentageLabel;
+        this.cancelButton = cancelButton;
+        this.pauseButton = pauseButton;
+        this.progressBar = progressBar;
+        this.currentSongLabel = currentSongLabel;
+        this.transferButton = transferButton;
+        this.selectedFiles = selectedFiles;
+        listAllLocalStorages(selectedFiles);
+        listenForUSBEvents();
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> popupStage.close());
 
