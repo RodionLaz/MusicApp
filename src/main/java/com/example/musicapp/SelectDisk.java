@@ -3,19 +3,16 @@ package com.example.musicapp;
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.UnsupportedTagException;
-import javafx.fxml.FXML;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.concurrent.Task;
-import org.usb4java.*;
-
 
 import javax.swing.filechooser.FileSystemView;
 import javax.usb.UsbDevice;
@@ -33,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 
 
 public class SelectDisk {
@@ -54,6 +52,7 @@ public class SelectDisk {
     public void listAllLocalStorages(List<String> selectedFiles) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File[] roots = File.listRoots();
+        vbox.getChildren().clear();
 
         for (File root : roots) {
             if (root.getPath().equals("C:\\")) {
@@ -114,45 +113,40 @@ public class SelectDisk {
     }
 
     public void listenForUSBEvents() {
-        UsbServices services = null;
         UsbServicesListener listener = new UsbServicesListener() {
             @Override
             public void usbDeviceAttached(UsbServicesEvent event) {
                 UsbDevice device = event.getUsbDevice();
                 System.out.println("Device connected: " + device);
-                // Add your handling code for device connection
+                Platform.runLater(() -> {
+
+                    listAllLocalStorages(selectedFiles);
+                });
             }
 
             @Override
             public void usbDeviceDetached(UsbServicesEvent event) {
                 UsbDevice device = event.getUsbDevice();
                 System.out.println("Device disconnected: " + device);
-                // Add your handling code for device disconnection
+                Platform.runLater(() -> {
+
+                    listAllLocalStorages(selectedFiles);
+                });
+
             }
         };
 
-        try {
-            // Get the USB services
-            services = UsbHostManager.getUsbServices();
-
-            // Add the listener to the USB services
-            services.addUsbServicesListener(listener);
-
-            // Wait indefinitely (or use a mechanism to keep the application running)
-            Thread.sleep(Long.MAX_VALUE);
-
-        } catch (UsbException | InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            // Clean up resources
-            if (services != null) {
-                try {
-                    services.removeUsbServicesListener(listener);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        // Start listening in a separate thread
+        Thread usbThread = new Thread(() -> {
+            try {
+                UsbServices services = UsbHostManager.getUsbServices();
+                services.addUsbServicesListener(listener);
+            } catch (UsbException e) {
+                e.printStackTrace();
             }
-        }
+        });
+        usbThread.start();
+
     }
 
 
