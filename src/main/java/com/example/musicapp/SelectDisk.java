@@ -18,6 +18,12 @@ import org.usb4java.*;
 
 
 import javax.swing.filechooser.FileSystemView;
+import javax.usb.UsbDevice;
+import javax.usb.UsbException;
+import javax.usb.UsbHostManager;
+import javax.usb.UsbServices;
+import javax.usb.event.UsbServicesEvent;
+import javax.usb.event.UsbServicesListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,8 +39,7 @@ public class SelectDisk {
     ThreadGroup group = new ThreadGroup("Transfares");
     private Task<Void> copyTask;
     private AtomicBoolean isPaused = new AtomicBoolean(false);
-    private HotplugCallbackHandle callbackHandle;
-    private Context context;
+
 
     private VBox vbox;
     private Stage stage;
@@ -109,57 +114,44 @@ public class SelectDisk {
     }
 
     public void listenForUSBEvents() {
+        UsbServices services = null;
+        UsbServicesListener listener = new UsbServicesListener() {
+            @Override
+            public void usbDeviceAttached(UsbServicesEvent event) {
+                UsbDevice device = event.getUsbDevice();
+                System.out.println("Device connected: " + device);
+                // Add your handling code for device connection
+            }
 
-        context = new Context();
+            @Override
+            public void usbDeviceDetached(UsbServicesEvent event) {
+                UsbDevice device = event.getUsbDevice();
+                System.out.println("Device disconnected: " + device);
+                // Add your handling code for device disconnection
+            }
+        };
 
         try {
-            // Initialize the context
-            int result = LibUsb.init(context);
-            if (result != LibUsb.SUCCESS) {
-                throw new LibUsbException("Unable to initialize libusb", result);
-            }
+            // Get the USB services
+            services = UsbHostManager.getUsbServices();
 
-            // Check if hotplug is supported
-            if (!LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
-                System.out.println("libusb does not support hotplug on this system");
-                return;
-            }
+            // Add the listener to the USB services
+            services.addUsbServicesListener(listener);
 
-            // Register the hotplug callback
-            callbackHandle = new HotplugCallbackHandle();
-            result = LibUsb.hotplugRegisterCallback(
-                    context,
-                    LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
-                    LibUsb.HOTPLUG_ENUMERATE,
-                    LibUsb.HOTPLUG_MATCH_ANY,
-                    LibUsb.HOTPLUG_MATCH_ANY,
-                    LibUsb.HOTPLUG_MATCH_ANY,
-                    new HotplugCallback() { // Explicitly implementing HotplugCallback
-                        @Override
-                        public int processEvent(Context context, Device device, int event, Object userData) {
-                            if (event == LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED) {
-                                System.out.println("Device connected: " + device);
-                                listAllLocalStorages(selectedFiles);
+            // Wait indefinitely (or use a mechanism to keep the application running)
+            Thread.sleep(Long.MAX_VALUE);
 
-                            } else if (event == LibUsb.HOTPLUG_EVENT_DEVICE_LEFT) {
-                                System.out.println("Device disconnected: " + device);
-                                listAllLocalStorages(selectedFiles);
-
-                            }
-                            return 0;
-                        }
-                    },
-                    null,
-                    callbackHandle
-            );
-
-            if (result != LibUsb.SUCCESS) {
-                throw new LibUsbException("Unable to register hotplug callback", result);
-            }
-
+        } catch (UsbException | InterruptedException e) {
+            e.printStackTrace();
         } finally {
-            // Close the USB context
-            LibUsb.exit(context);
+            // Clean up resources
+            if (services != null) {
+                try {
+                    services.removeUsbServicesListener(listener);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

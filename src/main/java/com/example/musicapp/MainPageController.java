@@ -21,12 +21,17 @@ import java.util.logging.Logger;
 
 import com.mpatric.mp3agic.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
+
 
 public class MainPageController implements Initializable {
 
@@ -49,7 +54,8 @@ public class MainPageController implements Initializable {
     private Label texttexttext;
     @FXML
     private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton;
-
+    @FXML
+    private ChoiceBox<String> sortBy = new ChoiceBox<>();
 
     public List<String> SelectedFiles = new ArrayList<>();
     public List<Song> songs = new ArrayList<>();
@@ -58,7 +64,6 @@ public class MainPageController implements Initializable {
     private String currentShow =  "Songs";
     private String SelectedPath;
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
-
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         SelectDisk SD = new SelectDisk();
@@ -72,6 +77,29 @@ public class MainPageController implements Initializable {
                 return;
             }
             songs = searchSongs(songs,Search);
+            String selectedOption = sortBy.getValue();
+            switch (selectedOption){
+                case "Songs":
+                    songs.sort(Comparator.comparing(Song::getSongName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Songs");
+                    break;
+                case "Albums":
+                    songs.sort(Comparator.comparing(Song::getAlbumName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Albums");
+                    break;
+                case "Artists":
+                    songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Arsits");
+                    break;
+                case "Year":
+                    songs.sort(Comparator.comparing(Song::getYear,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Years");
+                    break;
+                default:
+                    System.out.println("sorting by Songs");
+                    showitemsBySongsOrder();
+                    break;
+            }
             switch (currentShow){
                 case "Songs":
                     showitemsBySongsOrder();
@@ -81,7 +109,7 @@ public class MainPageController implements Initializable {
                     showitemsByAlbumsOrder();
                     System.out.println("showing by Albums");
                     break;
-                case "Arsits":
+                case "Artists":
                     showitemsByArtsitsOrder();
                     System.out.println("showing by Arsits");
                     break;
@@ -91,6 +119,45 @@ public class MainPageController implements Initializable {
                     break;
             }
 
+        });
+        sortBy.getItems().addAll("Songs","Artists","Albums","Year");
+        sortBy.setValue("Songs");
+        // Handling selection change
+        sortBy.setOnAction(e -> {
+            String selectedOption = sortBy.getValue();
+            switch (selectedOption){
+                case "Songs":
+                    songs.sort(Comparator.comparing(Song::getSongName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Songs");
+                    break;
+                case "Albums":
+                    songs.sort(Comparator.comparing(Song::getAlbumName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Albums");
+                    break;
+                case "Artists":
+                    songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
+                    System.out.println("sorting by Arsits");
+                    break;
+                case "Year":
+                    songs.sort(Comparator.comparing(Song::getYear, Comparator.nullsLast(Comparator.naturalOrder())));
+
+                    System.out.println("sorting by Years");
+                    break;
+            }
+            switch (currentShow){
+                case "Songs":
+                    showitemsBySongsOrder();
+                    System.out.println("showing by Songs");
+                    break;
+                case "Albums":
+                    showitemsByAlbumsOrder();
+                    System.out.println("showing by Albums");
+                    break;
+                case "Artists":
+                    showitemsByArtsitsOrder();
+                    System.out.println("showing by Arsits");
+                    break;
+            }
 
         });
         while (songs.isEmpty()){
@@ -134,7 +201,7 @@ public class MainPageController implements Initializable {
             showitemsByAlbumsOrder();
         });
         sortByArtistButton.setOnMouseClicked(event -> {
-            currentShow = "Arsits";
+            currentShow = "Artists";
             showitemsByArtsitsOrder();
         });
         sortBySongButton.setOnMouseClicked(event -> {
@@ -163,7 +230,7 @@ public class MainPageController implements Initializable {
     public void showitemsBySongsOrder() {
         if (songs == null) {
             System.out.println("songs list is null");
-            return; // Or handle the null case as needed
+            return;
         }
 
         try {
@@ -190,7 +257,8 @@ public class MainPageController implements Initializable {
             songs = removeDuplicates(songs);
             contentPane.getChildren().clear();
             for (Song song : songs) {
-                if(!ArtsitsSongs.contains(song)){
+                if(!ArtsitsSongs.contains(song.getArtistName())){
+                    ArtsitsSongs.add(song.getArtistName());
                     addItemArtist(song.getArtistName());
                 }
 
@@ -208,12 +276,13 @@ public class MainPageController implements Initializable {
         }
 
         try {
-            List<String> ArtsitsSongs = new ArrayList<>();
+            List<String> ArtsitsAlbums = new ArrayList<>();
             songs.sort(Comparator.comparing(Song::getArtistName,Comparator.nullsLast(Comparator.naturalOrder())));
             songs = removeDuplicates(songs);
             contentPane.getChildren().clear();
             for (Song song : songs) {
-                if(!ArtsitsSongs.contains(song)){
+                if(!ArtsitsAlbums.contains(song.getAlbumName())){
+                    ArtsitsAlbums.add(song.getAlbumName());
                     addItemAlbum(song.getAlbumName());
                 }
 
@@ -226,7 +295,6 @@ public class MainPageController implements Initializable {
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
     }
-    // Function to remove duplicates based on songName
     public static List<Song> removeDuplicates(List<Song> songs) {
         Set<String> seenNames = new LinkedHashSet<>(); // LinkedHashSet preserves insertion order
         List<Song> uniqueSongs = new ArrayList<>();
@@ -315,34 +383,33 @@ public class MainPageController implements Initializable {
             }
         });
 
-        // Add the itemPane to the contentPane
+
         contentPane.getChildren().add(itemPane);
+
     }
-    public void addItemArtist( String artistName) {
+    public void addItemArtist(String artistName) {
         Pane itemPane = new Pane();
         itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
         itemPane.setPrefSize(350, 120); // Adjust size as per your content
 
-
-
         // Label for the main text (Song)
         Label label = new Label("Artist: " + artistName);
-        label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
+        label.setLayoutX(30);
         label.setLayoutY(10);
-        label.setMaxWidth(310); // Adjust Label width based on CheckBox position
+        label.setMaxWidth(310);
         label.setWrapText(true);
-        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
         itemPane.getChildren().add(label);
-
-
 
         itemPane.setOnMouseClicked(event -> {
             Stage popupStage = new Stage();
             popupStage.initModality(Modality.APPLICATION_MODAL);
             popupStage.setTitle("Songs by " + artistName);
 
-            VBox vbox = new VBox(10);
+            VBox vbox = new VBox(10); // Create a VBox to hold the items
             vbox.setStyle("-fx-padding: 10;");
+            ScrollPane scrollPane = new ScrollPane(vbox); // Set VBox as content of the ScrollPane
+            scrollPane.setFitToWidth(true); // Ensure the ScrollPane resizes to fit the content width
 
             for (Song song : songs) {
                 if (song.getArtistName().equals(artistName)) {
@@ -374,51 +441,53 @@ public class MainPageController implements Initializable {
 
                     // CheckBox for selection
                     CheckBox checkBox = new CheckBox();
-                    checkBox.setLayoutX(130); // Adjust CheckBox position as needed
-                    checkBox.setLayoutY(80); // Adjust CheckBox position as needed
+                    checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false)); // Set initial state
                     itemPane2.getChildren().add(checkBox);
 
-                    // Set the initial state of the CheckBox from the map
-                    checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false));
+                    Button preview = new Button("Preview");
+                    itemPane2.getChildren().add(preview);
+                    preview.setOnMouseClicked(e->{
+                        Media media = new Media(Paths.get(song.getPath()).toUri().toString());
+                        MediaPlayer mediaPlayer = new MediaPlayer(media);
+
+                        // Start the media at 10 seconds
+                        mediaPlayer.setOnReady(() -> {
+                            mediaPlayer.seek(Duration.seconds(20));
+                            mediaPlayer.play();
+                        });
+
+                        // Stop the media after 5 seconds from the start position
+                        mediaPlayer.setStopTime(Duration.seconds(28));
+
+                    });
+
+
 
                     // Update the map when the CheckBox state changes
                     checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                         checkboxStateMap.put(song.getPath(), newValue);
                     });
+
                     itemPane2.setOnMouseClicked(e -> {
-                        boolean found = false;
-                        List<String> pathsToRemove = new ArrayList<>();
-
-                        for (String filePath : SelectedFiles) {
-                            if (filePath.equals(song.getPath())) {
-                                System.out.println("Found in list, removing: " + song.getPath());
-                                pathsToRemove.add(filePath);
-                                found = true;
-                            }
-                        }
-
-                        if (found) {
-                            SelectedFiles.removeAll(pathsToRemove);
+                        if (SelectedFiles.contains(song.getPath())) {
+                            SelectedFiles.remove(song.getPath());
                             checkBox.setSelected(false);
                         } else {
-                            System.out.println("Not found in list, adding: " + song.getPath());
                             SelectedFiles.add(song.getPath());
                             checkBox.setSelected(true);
                         }
-
                     });
 
-                    vbox.getChildren().add(itemPane2);
+                    vbox.getChildren().add(itemPane2); // Add each itemPane2 to the VBox
                 }
             }
 
-            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
-            popupStage.setScene(scene);
-            popupStage.showAndWait();
+            Scene scene = new Scene(scrollPane, 400, 300); // Create a scene with the ScrollPane
+            popupStage.setScene(scene); // Set the scene to the stage
+            popupStage.showAndWait(); // Show the stage and wait for it to be closed
         });
 
-
-        contentPane.getChildren().add(itemPane);
+        contentPane.getChildren().add(itemPane); // Add the itemPane to the main content pane
     }
     public void addItemAlbum( String albumName) {
         Pane itemPane = new Pane();
@@ -487,6 +556,24 @@ public class MainPageController implements Initializable {
                     checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                         checkboxStateMap.put(song.getPath(), newValue);
                     });
+
+                    Button preview = new Button("Preview");
+                    itemPane2.getChildren().add(preview);
+                    preview.setOnMouseClicked(e->{
+                        Media media = new Media(Paths.get(song.getPath()).toUri().toString());
+                        MediaPlayer mediaPlayer = new MediaPlayer(media);
+
+                        // Start the media at 10 seconds
+                        mediaPlayer.setOnReady(() -> {
+                            mediaPlayer.seek(Duration.seconds(20));
+                            mediaPlayer.play();
+                        });
+
+                        // Stop the media after 5 seconds from the start position
+                        mediaPlayer.setStopTime(Duration.seconds(28));
+
+                    });
+
                     itemPane2.setOnMouseClicked(e -> {
                         boolean found = false;
                         List<String> pathsToRemove = new ArrayList<>();
@@ -513,8 +600,8 @@ public class MainPageController implements Initializable {
                     vbox.getChildren().add(itemPane2);
                 }
             }
-
-            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            ScrollPane scrollPane1 = new ScrollPane(vbox);
+            Scene scene = new Scene(scrollPane1, 400, 300); // Adjust scene size as per your content
             popupStage.setScene(scene);
             popupStage.showAndWait();
         });

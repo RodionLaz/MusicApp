@@ -9,12 +9,14 @@ plugins {
 group 'com.example'
 version '1.0-SNAPSHOT'
 
+project.ext.set('nativeLibsDir', "$buildDir/libs/natives")
+configurations {
+    nativeBundle
+}
+
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
-    maven {
-        url "https://repository.jboss.org/maven2"
-    }
 }
 
 ext {
@@ -37,22 +39,38 @@ application {
 
 javafx {
     sdk = javafxSdkPath
-    version = javafxVersion
-    modules = ['javafx.controls', 'javafx.fxml']
+    version = "17.0.1"
+    modules = ['javafx.controls', 'javafx.fxml','javafx.media']
 }
 
 dependencies {
-    implementation 'org.openjfx:javafx-controls:16'  // Replace with your JavaFX version
-    implementation 'org.openjfx:javafx-fxml:16'
+    implementation 'org.openjfx:javafx-controls:17'
+    implementation 'org.openjfx:javafx-fxml:17'
     implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
     implementation 'com.mpatric:mp3agic:0.9.1'
+    implementation 'org.openjfx:javafx-controls:17.0.1'
+    implementation 'org.openjfx:javafx-media:17.0.1'
     implementation 'org.usb4java:usb4java:1.3.0'
     implementation 'org.usb4java:usb4java-javax:1.3.0'
+    implementation 'org.usb4java:libusb4java:1.3.0:win32-x86-64'
+    nativeBundle 'org.usb4java:libusb4java:1.3.0:win32-x86-64'
     testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 
 }
 
+task extractNativeBundle(type: Sync) {
+    from {
+        configurations.nativeBundle.collect { zipTree(it) }
+    }
+    into file(project.nativeLibsDir)
+}
+
+run {
+    systemProperty "java.library.path", project.nativeLibsDir
+}
+
+compileJava.dependsOn extractNativeBundle
 test {
     useJUnitPlatform()
 }

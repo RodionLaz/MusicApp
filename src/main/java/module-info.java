@@ -8,6 +8,8 @@ module com.example.musicapp {
     requires java.logging;
     requires java.naming;
     requires usb4java;
+    requires javafx.media;
+    requires usb.api;
     opens com.example.musicapp to javafx.fxml;
     exports com.example.musicapp;
 }

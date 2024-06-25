@@ -20,6 +20,17 @@ public class App extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
+
+
+//            try{
+//                System.setProperty("java.library.path", "D:\\libusb4java.dll");
+//                Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
+//                fieldSysPath.setAccessible(true);
+//                fieldSysPath.set(null, null);
+//            }catch (Exception e){
+//                e.printStackTrace();
+//            }
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("Main-Page.fxml"));
             Parent root = loader.load();
 

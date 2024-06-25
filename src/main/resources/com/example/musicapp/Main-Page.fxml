@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
@@ -10,22 +11,24 @@
 <?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.musicapp.MainPageController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17" fx:controller="com.example.musicapp.MainPageController">
     <top>
         <VBox alignment="CENTER" BorderPane.alignment="CENTER">
             <children>
                 <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="10.0">
                     <children>
-                        <TextField fx:id="searchField" text="" alignment="CENTER" prefHeight="25.0" prefWidth="217.0" />
+                        <TextField fx:id="searchField" alignment="CENTER" prefHeight="25.0" prefWidth="217.0" text="" />
                         <Button fx:id="searchButton" mnemonicParsing="false" text="Search" />
                     </children>
                 </HBox>
                 <HBox alignment="CENTER" prefHeight="36.0" prefWidth="1000.0" spacing="10.0">
                     <children>
-                        <Label  fx:id="texttexttext" text="Sort By : " />
+                        <Label fx:id="texttexttext" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="62.0" text="Show by :" />
                         <Button fx:id="sortByArtistButton" mnemonicParsing="false" text="Artist" />
                         <Button fx:id="sortByAlbumButton" mnemonicParsing="false" text="Album" />
                         <Button fx:id="sortBySongButton" mnemonicParsing="false" text="Song" />
+                  <Label fx:id="texttexttext2" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="62.0" text="Sort by :" />
+                  <ChoiceBox fx:id="sortBy" prefWidth="150.0" />
                     </children>
                 </HBox>
             </children>
