@@ -1,5 +1,6 @@
 package com.example.musicapp;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
@@ -31,6 +32,12 @@ import javafx.util.Duration;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
+import javax.usb.UsbDevice;
+import javax.usb.UsbException;
+import javax.usb.UsbHostManager;
+import javax.usb.UsbServices;
+import javax.usb.event.UsbServicesEvent;
+import javax.usb.event.UsbServicesListener;
 
 
 public class MainPageController implements Initializable {
@@ -53,7 +60,7 @@ public class MainPageController implements Initializable {
     @FXML
     private Label texttexttext;
     @FXML
-    private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton;
+    private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton,clearSelectedSongs;
     @FXML
     private ChoiceBox<String> sortBy = new ChoiceBox<>();
 
@@ -63,6 +70,7 @@ public class MainPageController implements Initializable {
     private Stage primaryStage;
     private String currentShow =  "Songs";
     private String SelectedPath;
+
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -160,6 +168,7 @@ public class MainPageController implements Initializable {
             }
 
         });
+
         while (songs.isEmpty()){
             Stage noSongsPopUp = new Stage();
             noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
@@ -191,7 +200,7 @@ public class MainPageController implements Initializable {
 
             noSongsPopUp.showAndWait();
         }
-        //organize();
+        organize();
         transferButton.setOnMouseClicked(event -> {
             SD.show(SelectedFiles,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
 
@@ -644,6 +653,40 @@ public class MainPageController implements Initializable {
     }
 
 
+    public void listenForUSBEvents() {
+        UsbServicesListener listener = new UsbServicesListener() {
+            @Override
+            public void usbDeviceAttached(UsbServicesEvent event) {
+                UsbDevice device = event.getUsbDevice();
+                Platform.runLater(() -> {
+
+
+                });
+            }
+
+            @Override
+            public void usbDeviceDetached(UsbServicesEvent event) {
+                UsbDevice device = event.getUsbDevice();
+                Platform.runLater(() -> {
+
+
+                });
+
+            }
+        };
+
+        // Start listening in a separate thread
+        Thread usbThread = new Thread(() -> {
+            try {
+                UsbServices services = UsbHostManager.getUsbServices();
+                services.addUsbServicesListener(listener);
+            } catch (UsbException e) {
+                e.printStackTrace();
+            }
+        });
+        usbThread.start();
+
+    }
     private void searchForMP3s(File directory, List<File> mp3Files) {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             LOGGER.warning("Invalid directory: " + directory);
@@ -673,7 +716,7 @@ public class MainPageController implements Initializable {
     }
 
     public void organize() {
-        String musicDirectoryPath = System.getProperty("user.home") + File.separator + "Music";
+        String musicDirectoryPath = SelectedPath;
         File musicDirectory = new File(musicDirectoryPath);
 
         if (!musicDirectory.exists() || !musicDirectory.isDirectory()) {

@@ -218,6 +218,7 @@ public class SelectDisk {
 
 
         new Thread(copyTask).start();
+
     }
     public void show(List<String> selectedFiles,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
         Stage popupStage = new Stage();

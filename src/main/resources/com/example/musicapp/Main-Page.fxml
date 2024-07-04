@@ -29,6 +29,7 @@
                         <Button fx:id="sortBySongButton" mnemonicParsing="false" text="Song" />
                   <Label fx:id="texttexttext2" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="62.0" text="Sort by :" />
                   <ChoiceBox fx:id="sortBy" prefWidth="150.0" />
+                        <Button fx:id="clearSelectedSongs" mnemonicParsing="false" text="Clear Selected Songs " />
                     </children>
                 </HBox>
             </children>
