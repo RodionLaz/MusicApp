@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ChoiceBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.TilePane?>
-<?import javafx.scene.layout.VBox?>
-
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17" fx:controller="com.example.musicapp.MainPageController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17" fx:controller="com.example.musicapp.MainPageController" fx:id="borderPane">
     <top>
         <VBox alignment="CENTER" BorderPane.alignment="CENTER">
             <children>
@@ -27,15 +18,14 @@
                         <Button fx:id="sortByArtistButton" mnemonicParsing="false" text="Artist" />
                         <Button fx:id="sortByAlbumButton" mnemonicParsing="false" text="Album" />
                         <Button fx:id="sortBySongButton" mnemonicParsing="false" text="Song" />
-                  <Label fx:id="texttexttext2" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="62.0" text="Sort by :" />
-                  <ChoiceBox fx:id="sortBy" prefWidth="150.0" />
+                        <Label fx:id="texttexttext2" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="62.0" text="Sort by :" />
+                        <ChoiceBox fx:id="sortBy" prefWidth="150.0" />
                         <Button fx:id="clearSelectedSongs" mnemonicParsing="false" text="Clear Selected Songs " />
                     </children>
                 </HBox>
             </children>
         </VBox>
     </top>
-
 
     <center>
         <ScrollPane fx:id="scrollPane" prefHeight="300.0" prefWidth="400.0">
@@ -65,6 +55,7 @@
                         <Button fx:id="transferButton" mnemonicParsing="false" prefHeight="25.0" prefWidth="270.0" text="Transfer" />
                     </children>
                 </HBox>
+                <HBox fx:id="messageBox" alignment="BOTTOM_RIGHT" spacing="10" />
             </children>
         </VBox>
     </bottom>

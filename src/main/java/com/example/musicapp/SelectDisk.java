@@ -48,6 +48,7 @@ public class SelectDisk {
     private Label currentSongLabel;
     private Button transferButton;
     private List<String> selectedFiles;
+    private File selectedRoot;
 
     public void listAllLocalStorages(List<String> selectedFiles) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
@@ -80,14 +81,21 @@ public class SelectDisk {
 
             itemPane.getChildren().add(driveInfoBox);
             itemPane.setOnMouseClicked(event -> {
-                System.out.println("Clicked");
-                transferButton.setOnAction(e -> {
+                selectedRoot = root;
+                if (selectedRoot==null){
+                    System.out.println("its null");
+
+                }else {
                     if (copyTask == null || copyTask.isDone()) {
+                        System.out.println(selectedRoot);
+                        selectedRoot=null;
                         transfare(selectedFiles, root, percentageLabel, cancelButton, pauseButton, progressBar, currentSongLabel);
+
+                        System.out.println("selectedRoot set to nul;");
                     } else {
                         isPaused.set(!isPaused.get());
                     }
-                });
+                }
                 pauseButton.setOnMouseClicked(e3-> {
                     isPaused.set(!isPaused.get());
                 });

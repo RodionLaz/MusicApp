@@ -1,27 +1,36 @@
 package com.example.musicapp;
 
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.TilePane;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.*;
 
 
-
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 
 import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 import com.mpatric.mp3agic.*;
-import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.DirectoryChooser;
@@ -60,6 +69,10 @@ public class MainPageController implements Initializable {
     @FXML
     private Label texttexttext;
     @FXML
+    private BorderPane borderPane;
+    @FXML
+    private HBox messageBox;
+    @FXML
     private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton,clearSelectedSongs;
     @FXML
     private ChoiceBox<String> sortBy = new ChoiceBox<>();
@@ -71,6 +84,7 @@ public class MainPageController implements Initializable {
     private String currentShow =  "Songs";
     private String SelectedPath;
 
+    private List<CheckBox> checkboxes = new ArrayList<>();
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -200,9 +214,34 @@ public class MainPageController implements Initializable {
 
             noSongsPopUp.showAndWait();
         }
-        organize();
+        listenForUSBEvents();
+        //organize();
         transferButton.setOnMouseClicked(event -> {
+            if (SelectedFiles.isEmpty()) {
+                Stage stage = new Stage();
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setTitle("No Songs Selected");
+
+                VBox vbox = new VBox(20);
+                vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
+                Label text = new Label("No songs were selected");
+                text.setStyle("-fx-font-size: 16px; -fx-text-fill: #333;");
+
+                Button closeButton = new Button("Close");
+                closeButton.setOnAction(e -> stage.close());
+                closeButton.setStyle("-fx-font-size: 14px;");
+
+                vbox.getChildren().addAll(text, closeButton);
+
+                Scene scene = new Scene(vbox, 300, 150); // Adjust scene size as per your content
+                stage.setScene(scene);
+                stage.showAndWait();
+                return;
+            }
+
             SD.show(SelectedFiles,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
+
 
         });
         sortByAlbumButton.setOnMouseClicked(event -> {
@@ -216,6 +255,15 @@ public class MainPageController implements Initializable {
         sortBySongButton.setOnMouseClicked(event -> {
             currentShow = "Songs";
             showitemsBySongsOrder();
+        });
+        clearSelectedSongs.setOnMouseClicked(e ->{
+            SelectedFiles.clear();
+            for (CheckBox checkBox : checkboxes){
+                if (checkBox.isSelected()){
+                    checkBox.setSelected(false);
+                }
+            }
+
         });
     }
 
@@ -323,6 +371,7 @@ public class MainPageController implements Initializable {
 
         // CheckBox for selection
         CheckBox checkBox = new CheckBox();
+        checkboxes.add(checkBox);
         checkBox.setLayoutX(130); // Adjust CheckBox position as needed
         checkBox.setLayoutY(80); // Adjust CheckBox position as needed
         itemPane.getChildren().add(checkBox);
@@ -450,6 +499,7 @@ public class MainPageController implements Initializable {
 
                     // CheckBox for selection
                     CheckBox checkBox = new CheckBox();
+                    checkboxes.add(checkBox);
                     checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false)); // Set initial state
                     itemPane2.getChildren().add(checkBox);
 
@@ -555,6 +605,7 @@ public class MainPageController implements Initializable {
 
                     // CheckBox for selection
                     CheckBox checkBox = new CheckBox();
+                    checkboxes.add(checkBox);
                     checkBox.setLayoutX(130); // Adjust CheckBox position as needed
                     checkBox.setLayoutY(80); // Adjust CheckBox position as needed
                     itemPane2.getChildren().add(checkBox);
@@ -659,7 +710,7 @@ public class MainPageController implements Initializable {
             public void usbDeviceAttached(UsbServicesEvent event) {
                 UsbDevice device = event.getUsbDevice();
                 Platform.runLater(() -> {
-
+                    showMessage("A device has been connected");
 
                 });
             }
@@ -668,7 +719,7 @@ public class MainPageController implements Initializable {
             public void usbDeviceDetached(UsbServicesEvent event) {
                 UsbDevice device = event.getUsbDevice();
                 Platform.runLater(() -> {
-
+                    showMessage("A device has been disconnected");
 
                 });
 
@@ -687,6 +738,33 @@ public class MainPageController implements Initializable {
         usbThread.start();
 
     }
+
+
+    public void showMessage(String messageText) {
+        Label messageLabel = new Label(messageText);
+        messageLabel.setStyle("-fx-background-color: #333; -fx-text-fill: white; -fx-padding: 10;");
+        messageBox.getChildren().add(messageLabel);
+
+        // Initial position at the bottom left
+        messageLabel.setTranslateY(50);
+
+        // Create the upwards animation
+        TranslateTransition upTransition = new TranslateTransition(Duration.seconds(1), messageLabel);
+        upTransition.setByY(-50);
+
+        // Pause for 3 seconds
+        PauseTransition pause = new PauseTransition(Duration.seconds(3));
+
+        // Create the downwards animation
+        TranslateTransition downTransition = new TranslateTransition(Duration.seconds(1), messageLabel);
+        downTransition.setByY(50);
+
+        // Sequential transition to combine the animations
+        SequentialTransition sequentialTransition = new SequentialTransition(upTransition, pause, downTransition);
+        sequentialTransition.setOnFinished(event -> messageBox.getChildren().remove(messageLabel));
+        sequentialTransition.play();
+    }
+
     private void searchForMP3s(File directory, List<File> mp3Files) {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             LOGGER.warning("Invalid directory: " + directory);
