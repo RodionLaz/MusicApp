@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.TilePane;
@@ -28,7 +29,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -47,10 +50,68 @@ public class SelectDisk {
     private ProgressBar progressBar;
     private Label currentSongLabel;
     private Button transferButton;
-    private List<String> selectedFiles;
-    private File selectedRoot;
+    private List<Song> selectedFiles;
+    private File selectedRoot = new File("D:\\");
+    private Map<String, Boolean> checkboxStateMap = new HashMap<>();
+    private List<CheckBox> checkBoxes = new ArrayList<>();
 
-    public void listAllLocalStorages(List<String> selectedFiles) {
+    public void finalCheck(Stage popupStage){
+        vbox.getChildren().clear();
+        for (Song song : selectedFiles){
+            TilePane itemPane = new TilePane();
+            itemPane.setPrefColumns(1);
+            itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
+            itemPane.setPrefSize(300, 100); // Adjust size as per your content
+
+
+            // Label for the main text (Song)
+            Label label2 = new Label("Song: " + song.getSongName());
+            label2.setMaxWidth(280); // Adjust Label width based on TilePane size
+            label2.setWrapText(true);
+            label2.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
+            itemPane.getChildren().add(label2);
+
+            // Label for ArtistName
+            Label artistLabel = new Label("Artist: " + song.getArtistName());
+            artistLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+            artistLabel.setWrapText(true);
+            artistLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+            itemPane.getChildren().add(artistLabel);
+
+            // Label for Album
+            Label albumLabel = new Label("Album: " + song.getAlbumName());
+            albumLabel.setMaxWidth(280); // Adjust Label width based on TilePane size
+            albumLabel.setWrapText(true);
+            albumLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;"); // CSS for label
+            itemPane.getChildren().add(albumLabel);
+
+            // CheckBox for selection
+            CheckBox checkBox = new CheckBox();
+            checkBoxes.add(checkBox);
+            checkBox.setLayoutX(130); // Adjust CheckBox position as needed
+            checkBox.setLayoutY(80); // Adjust CheckBox position as needed
+            itemPane.getChildren().add(checkBox);
+
+            checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), true));
+            checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                checkboxStateMap.put(song.getPath(), newValue);
+                if(newValue){
+                    selectedFiles.add(song);
+                }else{
+                    selectedFiles.remove(song);
+                }
+            });
+            vbox.getChildren().add(itemPane);
+        }
+        Button transfare = new Button("Transfare selected songs");
+        transfare.setOnMouseClicked(event ->{
+            listAllLocalStorages(selectedFiles);
+
+        });
+        vbox.getChildren().add(transfare);
+
+    }
+    public void listAllLocalStorages(List<Song> selectedFiles) {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File[] roots = File.listRoots();
         vbox.getChildren().clear();
@@ -58,6 +119,8 @@ public class SelectDisk {
         for (File root : roots) {
             if (root.getPath().equals("C:\\")) {
                 continue; // Skip processing for C:\ drive
+            }else {
+                System.out.println(root);
             }
             TilePane itemPane = new TilePane();
             itemPane.setPrefColumns(1);
@@ -158,9 +221,10 @@ public class SelectDisk {
     }
 
 
-    public void transfare(List<String> selectedSongs, File root, Label percentageLabel, Button cancelButton, Button pauseButton, ProgressBar progressBar, Label currentSongLabel) {
+    public void transfare(List<Song> selectedSongs, File root, Label percentageLabel, Button cancelButton, Button pauseButton, ProgressBar progressBar, Label currentSongLabel) {
         List<File> selectedSongsFile = new ArrayList<>();
-        for (String songPath : selectedSongs) {
+        for ( Song song: selectedSongs) {
+            String songPath = song.getPath();
             File songFile = new File(songPath);
             selectedSongsFile.add(songFile);
         }
@@ -228,7 +292,7 @@ public class SelectDisk {
         new Thread(copyTask).start();
 
     }
-    public void show(List<String> selectedFiles,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
+    public void show(List<Song> selectedFiles,Label percentageLabel,Button cancelButton,Button pauseButton,ProgressBar progressBar,Label currentSongLabel,Button transferButton) {
         Stage popupStage = new Stage();
         popupStage.initModality(Modality.APPLICATION_MODAL);
 
@@ -242,7 +306,8 @@ public class SelectDisk {
         this.currentSongLabel = currentSongLabel;
         this.transferButton = transferButton;
         this.selectedFiles = selectedFiles;
-        listAllLocalStorages(selectedFiles);
+        finalCheck(popupStage);
+
         listenForUSBEvents();
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> popupStage.close());

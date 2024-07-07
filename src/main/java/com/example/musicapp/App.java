@@ -16,21 +16,24 @@ import java.nio.file.Paths;
 
 public class App extends Application {
 
-
+    private static Stage primaryStage;
+    private static Scene mainScene;
     @Override
     public void start(Stage primaryStage) {
         try {
-
+            App.primaryStage = primaryStage;
             FXMLLoader loader = new FXMLLoader(getClass().getResource("Main-Page.fxml"));
             Parent root = loader.load();
-
+            mainScene = new Scene(root, 1000, 1000);
             // Get the controller instance
             MainPageController controller = loader.getController();
             // Pass the stage to the controller
             controller.setPrimaryStage(primaryStage);
 
-            primaryStage.setTitle("JavaFX App");
-            primaryStage.setScene(new Scene(root, 1000, 1000));
+            primaryStage.setTitle("Music Transfare");
+
+            primaryStage.setScene(mainScene);
+            primaryStage.setFullScreen(true);
             primaryStage.show();
 
 
@@ -38,6 +41,12 @@ public class App extends Application {
            e.printStackTrace();
 
         }
+    }
+    public static Stage getPrimaryStage() {
+        return primaryStage;
+    }
+    public static Scene getPrimaryScene() {
+        return mainScene;
     }
     public static void main(String[] args) {
         launch(args);

@@ -77,20 +77,66 @@ public class MainPageController implements Initializable {
     @FXML
     private ChoiceBox<String> sortBy = new ChoiceBox<>();
 
-    public List<String> SelectedFiles = new ArrayList<>();
+    public List<Song> SelectedFiles = new ArrayList<>();
     public List<Song> songs = new ArrayList<>();
     private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
     private Stage primaryStage;
     private String currentShow =  "Songs";
+    private String currentScene = "Ads";
     private String SelectedPath;
-
+    private boolean initialized = false;
     private List<CheckBox> checkboxes = new ArrayList<>();
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
+    private Scene adsScene;
+    private Scene mainScene;
+    private volatile boolean initialEventsProcessed = false;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         SelectDisk SD = new SelectDisk();
+        mainScene =  App.getPrimaryScene();
+        while (songs.isEmpty()){
+            Stage noSongsPopUp = new Stage();
+            noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
 
-        showitemsBySongsOrder();
+            VBox vbox = new VBox(10);
+            vbox.setStyle("-fx-padding: 10;");
+            Label text = new Label("Select the folder with songs");
+            Button btn = new Button("Select Folder");
+            noSongsPopUp.setTitle("No Songs Found");
+            vbox.getChildren().addAll(text, btn);
+            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            noSongsPopUp.setScene(scene);
+            btn.setOnAction(e -> {
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setTitle("Select Folder");
+                directoryChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Music"));
+                File selectedDirectory = directoryChooser.showDialog(primaryStage);
+
+                if (selectedDirectory != null) {
+                    System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
+                    SelectedPath = selectedDirectory.getAbsolutePath();
+                    songs = findMP3(selectedDirectory.getAbsolutePath());
+                    showitemsBySongsOrder();
+                    noSongsPopUp.close(); // Close the popup after selecting the folder
+                } else {
+                    System.out.println("No Directory selected");
+                }
+            });
+
+            noSongsPopUp.showAndWait();
+        }
+
+
+        Label mainLabel = new Label("ADS ADS ADS ADS ADS ");
+        StackPane mainPane = new StackPane(mainLabel);
+        adsScene = new Scene(mainPane);
+
+
+
+        switchToAdsScene();
+        //organize();
+
         searchButton.setOnMouseClicked(event -> {
             String Search = searchField.getText();
             if(searchField.getText().isEmpty()){
@@ -144,7 +190,6 @@ public class MainPageController implements Initializable {
         });
         sortBy.getItems().addAll("Songs","Artists","Albums","Year");
         sortBy.setValue("Songs");
-        // Handling selection change
         sortBy.setOnAction(e -> {
             String selectedOption = sortBy.getValue();
             switch (selectedOption){
@@ -182,40 +227,6 @@ public class MainPageController implements Initializable {
             }
 
         });
-
-        while (songs.isEmpty()){
-            Stage noSongsPopUp = new Stage();
-            noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
-
-            VBox vbox = new VBox(10);
-            vbox.setStyle("-fx-padding: 10;");
-            Label text = new Label("Select the folder with songs");
-            Button btn = new Button("Select Folder");
-            noSongsPopUp.setTitle("No Songs Found");
-            vbox.getChildren().addAll(text, btn);
-            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
-            noSongsPopUp.setScene(scene);
-            btn.setOnAction(e -> {
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                directoryChooser.setTitle("Select Folder");
-                directoryChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Music"));
-                File selectedDirectory = directoryChooser.showDialog(primaryStage);
-
-                if (selectedDirectory != null) {
-                    System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
-                    SelectedPath = selectedDirectory.getAbsolutePath();
-                    songs = findMP3(selectedDirectory.getAbsolutePath());
-                    showitemsBySongsOrder();
-                    noSongsPopUp.close(); // Close the popup after selecting the folder
-                } else {
-                    System.out.println("No Directory selected");
-                }
-            });
-
-            noSongsPopUp.showAndWait();
-        }
-        listenForUSBEvents();
-        //organize();
         transferButton.setOnMouseClicked(event -> {
             if (SelectedFiles.isEmpty()) {
                 Stage stage = new Stage();
@@ -239,6 +250,7 @@ public class MainPageController implements Initializable {
                 stage.showAndWait();
                 return;
             }
+
 
             SD.show(SelectedFiles,percentageLabel,cancelButton,pauseButton,progressBar,currentSongLabel,transferButton);
 
@@ -264,6 +276,22 @@ public class MainPageController implements Initializable {
                 }
             }
 
+        });
+        listenForUSBEvents();
+    }
+    private void switchToMainScene() {
+        Platform.runLater(() -> {
+            Scene now = primaryStage.getScene();
+
+            primaryStage.setScene(mainScene);
+            primaryStage.setFullScreen(true);
+        });
+    }
+
+    private void switchToAdsScene() {
+        Platform.runLater(() -> {
+            primaryStage.setScene(adsScene);
+            primaryStage.setFullScreen(true);
         });
     }
 
@@ -295,7 +323,7 @@ public class MainPageController implements Initializable {
             songs = removeDuplicates(songs);
             contentPane.getChildren().clear();
             for (Song song : songs) {
-                addItem(song.getSongName(), song.getArtistName(), song.getAlbumName(), song.getYear(), song.getPath());
+                addItem(song);
             }
         } catch (NullPointerException e) {
             System.out.println("NullPointerException occurred during sorting: " + e.getMessage());
@@ -325,7 +353,6 @@ public class MainPageController implements Initializable {
             e.printStackTrace(); // Print stack trace for detailed error analysis
         }
     }
-
     public void showitemsByAlbumsOrder() {
         if (songs == null) {
             System.out.println("songs list is null");
@@ -364,7 +391,7 @@ public class MainPageController implements Initializable {
 
         return uniqueSongs;
     }
-    public void addItem(String labelText, String artistName, String album, String year, String path) {
+    public void addItem(Song song) {
         Pane itemPane = new Pane();
         itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
         itemPane.setPrefSize(350, 120); // Adjust size as per your content
@@ -377,7 +404,7 @@ public class MainPageController implements Initializable {
         itemPane.getChildren().add(checkBox);
 
         // Label for the main text (Song)
-        Label label = new Label("Song: " + labelText);
+        Label label = new Label("Song: " + song.getSongName());
         label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
         label.setLayoutY(10);
         label.setMaxWidth(310); // Adjust Label width based on CheckBox position
@@ -386,7 +413,7 @@ public class MainPageController implements Initializable {
         itemPane.getChildren().add(label);
 
         // Label for ArtistName
-        Label artistLabel = new Label("Artist: " + artistName);
+        Label artistLabel = new Label("Artist: " + song.getArtistName());
         artistLabel.setLayoutX(30);
         artistLabel.setLayoutY(30);
         artistLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
@@ -395,7 +422,7 @@ public class MainPageController implements Initializable {
         itemPane.getChildren().add(artistLabel);
 
         // Label for Album
-        Label albumLabel = new Label("Album: " + album);
+        Label albumLabel = new Label("Album: " + song.getAlbumName());
         albumLabel.setLayoutX(30);
         albumLabel.setLayoutY(50);
         albumLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
@@ -404,7 +431,7 @@ public class MainPageController implements Initializable {
         itemPane.getChildren().add(albumLabel);
 
         // Label for Year
-        Label yearLabel = new Label("Year: " + year);
+        Label yearLabel = new Label("Year: " + song.getYear());
         yearLabel.setLayoutX(30);
         yearLabel.setLayoutY(70);
         yearLabel.setMaxWidth(310); // Adjust Label width based on CheckBox position
@@ -413,19 +440,20 @@ public class MainPageController implements Initializable {
         itemPane.getChildren().add(yearLabel);
 
         // Set the initial state of the CheckBox from the map
-        checkBox.setSelected(checkboxStateMap.getOrDefault(path, false));
+        checkBox.setSelected(checkboxStateMap.getOrDefault(song.getPath(), false));
 
         // Update the map when the CheckBox state changes
         checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            checkboxStateMap.put(path, newValue);
+            checkboxStateMap.put(song.getPath(), newValue);
         });
         itemPane.setOnMouseClicked(event -> {
             boolean found = false;
             List<String> pathsToRemove = new ArrayList<>();
 
-            for (String filePath : SelectedFiles) {
-                if (filePath.equals(path)) {
-                    System.out.println("Found in list, removing: " + path);
+            for (Song song1 : SelectedFiles) {
+                String filePath = song1.getPath();
+                if (filePath.equals(song.getPath())) {
+                    System.out.println("Found in list, removing: " + song.getPath());
                     pathsToRemove.add(filePath);
                     found = true;
                 }
@@ -435,8 +463,8 @@ public class MainPageController implements Initializable {
                 SelectedFiles.removeAll(pathsToRemove);
                 checkBox.setSelected(false);
             } else {
-                System.out.println("Not found in list, adding: " + path);
-                SelectedFiles.add(path);
+                System.out.println("Not found in list, adding: " + song.getPath());
+                SelectedFiles.add(song);
                 checkBox.setSelected(true);
             }
         });
@@ -528,11 +556,11 @@ public class MainPageController implements Initializable {
                     });
 
                     itemPane2.setOnMouseClicked(e -> {
-                        if (SelectedFiles.contains(song.getPath())) {
-                            SelectedFiles.remove(song.getPath());
+                        if (SelectedFiles.contains(song)) {
+                            SelectedFiles.remove(song);
                             checkBox.setSelected(false);
                         } else {
-                            SelectedFiles.add(song.getPath());
+                            SelectedFiles.add(song);
                             checkBox.setSelected(true);
                         }
                     });
@@ -636,12 +664,13 @@ public class MainPageController implements Initializable {
 
                     itemPane2.setOnMouseClicked(e -> {
                         boolean found = false;
-                        List<String> pathsToRemove = new ArrayList<>();
+                        List<Song> pathsToRemove = new ArrayList<>();
 
-                        for (String filePath : SelectedFiles) {
-                            if (filePath.equals(song.getPath())) {
+                        for (Song song1 : SelectedFiles) {
+                            String filePath = song1.getPath();
+                            if (song1.equals(song.getPath())) {
                                 System.out.println("Found in list, removing: " + song.getPath());
-                                pathsToRemove.add(filePath);
+                                pathsToRemove.add(song);
                                 found = true;
                             }
                         }
@@ -651,7 +680,7 @@ public class MainPageController implements Initializable {
                             checkBox.setSelected(false);
                         } else {
                             System.out.println("Not found in list, adding: " + song.getPath());
-                            SelectedFiles.add(song.getPath());
+                            SelectedFiles.add(song);
                             checkBox.setSelected(true);
                         }
 
@@ -669,8 +698,6 @@ public class MainPageController implements Initializable {
 
         contentPane.getChildren().add(itemPane);
     }
-
-
     public List<Song> findMP3(String directoryPath) {
         List<Song> songs = new ArrayList<>();
         JFileChooser fileChooser = new JFileChooser();
@@ -702,27 +729,37 @@ public class MainPageController implements Initializable {
         }
         return songs;
     }
-
-
     public void listenForUSBEvents() {
         UsbServicesListener listener = new UsbServicesListener() {
             @Override
             public void usbDeviceAttached(UsbServicesEvent event) {
-                UsbDevice device = event.getUsbDevice();
-                Platform.runLater(() -> {
-                    showMessage("A device has been connected");
-
-                });
+                if (initialEventsProcessed) {
+                    UsbDevice device = event.getUsbDevice();
+                    Platform.runLater(() -> {
+                        System.out.println("connected");
+                        showMessage("A device has been connected");
+                        if ("Ads".equals(currentScene)) {
+                            System.out.println("switching to main");
+                            switchToMainScene();
+                            currentScene = "Main";
+                        }
+                    });
+                }
             }
 
             @Override
             public void usbDeviceDetached(UsbServicesEvent event) {
-                UsbDevice device = event.getUsbDevice();
-                Platform.runLater(() -> {
-                    showMessage("A device has been disconnected");
-
-                });
-
+                if (initialEventsProcessed) {
+                    UsbDevice device = event.getUsbDevice();
+                    Platform.runLater(() -> {
+                        showMessage("A device has been disconnected");
+                        if ("Main".equals(currentScene)) {
+                            System.out.println("switching to ads");
+                            switchToAdsScene();
+                            currentScene = "Ads";
+                        }
+                    });
+                }
             }
         };
 
@@ -731,15 +768,17 @@ public class MainPageController implements Initializable {
             try {
                 UsbServices services = UsbHostManager.getUsbServices();
                 services.addUsbServicesListener(listener);
-            } catch (UsbException e) {
+
+                // Wait a bit to allow initial events to be processed
+                Thread.sleep(1000);
+
+                initialEventsProcessed = true;  // Set the flag after initialization is done
+            } catch (UsbException | InterruptedException e) {
                 e.printStackTrace();
             }
         });
         usbThread.start();
-
     }
-
-
     public void showMessage(String messageText) {
         Label messageLabel = new Label(messageText);
         messageLabel.setStyle("-fx-background-color: #333; -fx-text-fill: white; -fx-padding: 10;");
@@ -764,7 +803,6 @@ public class MainPageController implements Initializable {
         sequentialTransition.setOnFinished(event -> messageBox.getChildren().remove(messageLabel));
         sequentialTransition.play();
     }
-
     private void searchForMP3s(File directory, List<File> mp3Files) {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             LOGGER.warning("Invalid directory: " + directory);
@@ -786,13 +824,9 @@ public class MainPageController implements Initializable {
             }
         }
     }
-
-
-
     private String sanitizeFileName(String name) {
         return name.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
-
     public void organize() {
         String musicDirectoryPath = SelectedPath;
         File musicDirectory = new File(musicDirectoryPath);
@@ -804,7 +838,6 @@ public class MainPageController implements Initializable {
 
         processDirectory(musicDirectory, musicDirectory);
     }
-
     private void processDirectory(File directory, File baseDirectory) {
         File[] files = directory.listFiles();
 
