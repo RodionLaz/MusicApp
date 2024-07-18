@@ -21,15 +21,17 @@ public class App extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
+
             App.primaryStage = primaryStage;
             FXMLLoader loader = new FXMLLoader(getClass().getResource("Main-Page.fxml"));
             Parent root = loader.load();
             mainScene = new Scene(root, 1000, 1000);
-            // Get the controller instance
-            MainPageController controller = loader.getController();
-            // Pass the stage to the controller
-            controller.setPrimaryStage(primaryStage);
 
+            MainPageController controller = loader.getController();
+
+
+            controller.setPrimaryStage(primaryStage);
+            controller.setMainScene(mainScene);
             primaryStage.setTitle("Music Transfare");
 
             primaryStage.setScene(mainScene);

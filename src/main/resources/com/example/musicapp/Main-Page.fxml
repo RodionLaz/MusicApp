@@ -23,17 +23,29 @@
                         <Button fx:id="clearSelectedSongs" mnemonicParsing="false" text="Clear Selected Songs " />
                     </children>
                 </HBox>
+                <HBox alignment="CENTER_RIGHT" prefHeight="36.0" prefWidth="1000.0" spacing="10.0">
+                    <children>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="adminPanelbtn" mnemonicParsing="false" text="Admin panel" />
+                    </children>
+                </HBox>
             </children>
         </VBox>
     </top>
 
     <center>
-        <ScrollPane fx:id="scrollPane" prefHeight="300.0" prefWidth="400.0">
-            <content>
-                <TilePane fx:id="contentPane" hgap="10" prefTileHeight="100" prefTileWidth="150" vgap="10" />
-            </content>
-        </ScrollPane>
+        <StackPane>
+            <ScrollPane fx:id="scrollPane" prefHeight="300.0" prefWidth="400.0">
+                <content>
+                    <TilePane fx:id="contentPane" alignment="CENTER" hgap="10" prefTileHeight="120" prefTileWidth="500" vgap="10">
+
+                    </TilePane>
+
+                </content>
+            </ScrollPane>
+        </StackPane>
     </center>
+
     <bottom>
         <VBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <children>

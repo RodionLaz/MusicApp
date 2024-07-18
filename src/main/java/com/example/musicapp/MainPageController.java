@@ -4,11 +4,10 @@ import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -18,7 +17,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -61,6 +59,8 @@ public class MainPageController implements Initializable {
     private Label percentageLabel;
     @FXML
     private ProgressBar progressBar;
+    @FXML
+    private Button adminPanelbtn;
 
     @FXML
     private TilePane contentPane;
@@ -89,43 +89,72 @@ public class MainPageController implements Initializable {
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
     private Scene adsScene;
     private Scene mainScene;
+    private Boolean accountCreated = false;
     private volatile boolean initialEventsProcessed = false;
+    private ControlPanelController CPC;
+    private Stage controlPanelStage;
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         SelectDisk SD = new SelectDisk();
-        mainScene =  App.getPrimaryScene();
-        while (songs.isEmpty()){
-            Stage noSongsPopUp = new Stage();
-            noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
-
-            VBox vbox = new VBox(10);
-            vbox.setStyle("-fx-padding: 10;");
-            Label text = new Label("Select the folder with songs");
-            Button btn = new Button("Select Folder");
-            noSongsPopUp.setTitle("No Songs Found");
-            vbox.getChildren().addAll(text, btn);
-            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
-            noSongsPopUp.setScene(scene);
-            btn.setOnAction(e -> {
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                directoryChooser.setTitle("Select Folder");
-                directoryChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Music"));
-                File selectedDirectory = directoryChooser.showDialog(primaryStage);
-
-                if (selectedDirectory != null) {
-                    System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
-                    SelectedPath = selectedDirectory.getAbsolutePath();
-                    songs = findMP3(selectedDirectory.getAbsolutePath());
-                    showitemsBySongsOrder();
-                    noSongsPopUp.close(); // Close the popup after selecting the folder
-                } else {
-                    System.out.println("No Directory selected");
-                }
-            });
-
-            noSongsPopUp.showAndWait();
+        scrollPane.setStyle("-fx-pref-width: 30px; -fx-pref-height: 15px;");
+        try {
+            initControlPanel();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+       // CPC.show(new ControlPanelController.Access(true,true,true));
+        mainScene =  App.getPrimaryScene();
+        System.out.println(songs.isEmpty());
+        System.out.println(accountCreated);
+        selectMusicFolder();
+        System.out.println("Skipped some how");
+        System.out.println(songs.isEmpty());
+        System.out.println(accountCreated);
+
+        adminPanelbtn.setOnMouseClicked(e->{
+            try{
+
+                Stage createAccountStage = new Stage();
+                Pane pane = new Pane();
+                // Create TextFields for input
+                TextField textField1 = new TextField();
+                textField1.setLayoutX(20);
+                textField1.setLayoutY(20);
+                textField1.setPromptText("Enter username");
+
+                TextField textField2 = new TextField();
+                textField2.setLayoutX(20);
+                textField2.setLayoutY(60);
+                textField2.setPromptText("Enter password");
+
+                Button confirm = new Button("Confirm");
+                confirm.setLayoutX(20);
+                confirm.setLayoutY(100);
+                confirm.setOnMouseClicked(e2->{
+                    ControlPanelController.Access result = CPC.login(textField1.getText(),textField2.getText());
+                    if (result != null){
+                        CPC.show(result);
+                        createAccountStage.close();
+                    }
+                });
+                // Add TextFields to the pane
+                pane.getChildren().addAll(textField1, textField2,confirm);
+
+                Scene createAccountScene = new Scene(pane, 300, 200);
+
+                // Set the Scene onto the Stage
+                createAccountStage.setScene(createAccountScene);
+
+                // Show the Stage
+                createAccountStage.show();
+            }catch (Exception exception){
+
+                exception.printStackTrace();
+            }
+
+        });
 
 
         Label mainLabel = new Label("ADS ADS ADS ADS ADS ");
@@ -279,6 +308,87 @@ public class MainPageController implements Initializable {
         });
         listenForUSBEvents();
     }
+    public void selectMusicFolder(){
+        songs.clear();
+        while (songs.isEmpty() || !accountCreated){
+            Stage noSongsPopUp = new Stage();
+            noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
+
+            VBox vbox = new VBox(10);
+            vbox.setStyle("-fx-padding: 10;");
+            Label text = new Label("Select the folder with songs");
+            Button btn = new Button("Select Folder");
+            vbox.getChildren().addAll(text, btn);
+            if (!accountCreated){
+
+
+                Button btn2 = new Button("Create first Admin account");
+                btn2.setOnMouseClicked(e -> {
+                    Stage createAccountStage = new Stage();
+                    Pane pane = new Pane();
+                    // Create TextFields for input
+                    TextField textField1 = new TextField();
+                    textField1.setLayoutX(20);
+                    textField1.setLayoutY(20);
+                    textField1.setPromptText("Enter username");
+
+                    TextField textField2 = new TextField();
+                    textField2.setLayoutX(20);
+                    textField2.setLayoutY(60);
+                    textField2.setPromptText("Enter password");
+
+                    Button confirm = new Button("Confirm");
+                    confirm.setLayoutX(20);
+                    confirm.setLayoutY(100);
+                    confirm.setOnMouseClicked(e2->{
+                        Boolean result = CPC.createFirstAccount(textField1.getText(),textField2.getText());
+                        if (result){
+                            System.out.println("account created");
+                            accountCreated = true;
+                            createAccountStage.close();
+                            vbox.getChildren().clear();
+                            vbox.getChildren().addAll(text, btn);
+                        }
+                    });
+                    // Add TextFields to the pane
+                    pane.getChildren().addAll(textField1, textField2,confirm);
+
+                    Scene createAccountScene = new Scene(pane, 300, 200);
+
+                    // Set the Scene onto the Stage
+                    createAccountStage.setScene(createAccountScene);
+
+                    // Show the Stage
+                    createAccountStage.show();
+                });
+                vbox.getChildren().addAll(btn2);
+            }
+
+            noSongsPopUp.setTitle("No Songs Found");
+
+            Scene scene = new Scene(vbox, 400, 300); // Adjust scene size as per your content
+            noSongsPopUp.setScene(scene);
+            btn.setOnAction(e -> {
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setTitle("Select Folder");
+                directoryChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Music"));
+                File selectedDirectory = directoryChooser.showDialog(primaryStage);
+
+                if (selectedDirectory != null) {
+                    System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
+                    SelectedPath = selectedDirectory.getAbsolutePath();
+                    songs = findMP3(selectedDirectory.getAbsolutePath());
+                    showitemsBySongsOrder();
+                    noSongsPopUp.close(); // Close the popup after selecting the folder
+
+                } else {
+                    System.out.println("No Directory selected");
+                }
+            });
+
+            noSongsPopUp.showAndWait();
+        }
+    }
     private void switchToMainScene() {
         Platform.runLater(() -> {
             Scene now = primaryStage.getScene();
@@ -287,15 +397,12 @@ public class MainPageController implements Initializable {
             primaryStage.setFullScreen(true);
         });
     }
-
     private void switchToAdsScene() {
         Platform.runLater(() -> {
-            primaryStage.setScene(adsScene);
+            primaryStage.setScene(mainScene);
             primaryStage.setFullScreen(true);
         });
     }
-
-
     public List<Song> searchSongs(List<Song> songs, String searchText) {
         List<Song> results = new ArrayList<>();
 
@@ -311,6 +418,14 @@ public class MainPageController implements Initializable {
         }
 
         return results;
+    }
+    public void initControlPanel() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("Control-Panel.fxml"));
+        Parent root = loader.load();
+        CPC = loader.getController();
+        CPC.setRoot(root);
+        CPC.setMainPageController(this);
+
     }
     public void showitemsBySongsOrder() {
         if (songs == null) {
@@ -378,6 +493,10 @@ public class MainPageController implements Initializable {
     }
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+
+    }
+    public void setMainScene(Scene mainScene) {
+        this.mainScene = mainScene;
     }
     public static List<Song> removeDuplicates(List<Song> songs) {
         Set<String> seenNames = new LinkedHashSet<>(); // LinkedHashSet preserves insertion order
@@ -469,9 +588,8 @@ public class MainPageController implements Initializable {
             }
         });
 
-
+        // Add itemPane to contentPane
         contentPane.getChildren().add(itemPane);
-
     }
     public void addItemArtist(String artistName) {
         Pane itemPane = new Pane();
@@ -581,9 +699,6 @@ public class MainPageController implements Initializable {
         itemPane.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 1px;");
         itemPane.setPrefSize(350, 120); // Adjust size as per your content
 
-
-
-        // Label for the main text (Song)
         Label label = new Label("Album: " + albumName);
         label.setLayoutX(30); // Adjust Label position to accommodate CheckBox
         label.setLayoutY(10);
@@ -591,9 +706,6 @@ public class MainPageController implements Initializable {
         label.setWrapText(true);
         label.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;"); // CSS for label
         itemPane.getChildren().add(label);
-
-
-
 
         itemPane.setOnMouseClicked(event -> {
             Stage popupStage = new Stage();
@@ -899,12 +1011,4 @@ public class MainPageController implements Initializable {
             }
         }
     }
-
-
-
-
-
-
-
-
 }
