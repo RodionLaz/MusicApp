@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -14,6 +15,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
 
@@ -31,6 +34,7 @@ import java.util.logging.Logger;
 import com.mpatric.mp3agic.*;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -93,6 +97,9 @@ public class MainPageController implements Initializable {
     private volatile boolean initialEventsProcessed = false;
     private ControlPanelController CPC;
     private Stage controlPanelStage;
+    private List<File> adsFiles = new ArrayList<>();
+    private int currentIndex = 0;
+    private static final int SLIDE_DURATION = 5;
 
 
     @Override
@@ -155,10 +162,10 @@ public class MainPageController implements Initializable {
             }
 
         });
+        loadAds();
 
 
-        Label mainLabel = new Label("ADS ADS ADS ADS ADS ");
-        StackPane mainPane = new StackPane(mainLabel);
+        StackPane mainPane = new StackPane();
         adsScene = new Scene(mainPane);
 
 
@@ -308,6 +315,83 @@ public class MainPageController implements Initializable {
         });
         listenForUSBEvents();
     }
+
+    private void startSlideshow(Stage stage) {
+
+
+        StackPane root = new StackPane();
+        ImageView imageView = new ImageView();
+        MediaView mediaView = new MediaView();
+
+        root.getChildren().addAll(imageView, mediaView);
+        Scene scene = new Scene(root, 800, 600); // Set your desired size
+        stage.setScene(scene);
+        stage.setTitle("Media Slideshow");
+        stage.show();
+
+        if (!adsFiles.isEmpty()) {
+            showNextSlide(imageView, mediaView);
+        } else {
+            Label noFilesLabel = new Label("No media files found in the specified folder.");
+            root.getChildren().add(noFilesLabel);
+            StackPane.setAlignment(noFilesLabel, Pos.CENTER);
+        }
+    }
+    private void showNextSlide(ImageView imageView, MediaView mediaView) {
+        if (currentIndex >= adsFiles.size()) {
+            currentIndex = 0;
+        }
+
+        File file = adsFiles.get(currentIndex);
+        String fileName = file.getName().toLowerCase();
+
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")) {
+            showImage(imageView, mediaView, file);
+        } else if (fileName.endsWith(".mp4") || fileName.endsWith(".mov") || fileName.endsWith(".m4v")) {
+            showVideo(imageView, mediaView, file);
+        }
+
+        currentIndex++;
+    }
+    private void showImage(ImageView imageView, MediaView mediaView, File file) {
+        imageView.setImage(new Image(file.toURI().toString()));
+        imageView.setVisible(true);
+        mediaView.setVisible(false);
+
+        Duration duration = Duration.seconds(SLIDE_DURATION);
+        PauseTransition pause = new PauseTransition(duration);
+        pause.setOnFinished(event -> showNextSlide(imageView, mediaView));
+        pause.play();
+    }
+
+    private void showVideo(ImageView imageView, MediaView mediaView, File file) {
+        Media media = new Media(file.toURI().toString());
+        MediaPlayer mediaPlayer = new MediaPlayer(media);
+        mediaView.setMediaPlayer(mediaPlayer);
+        imageView.setVisible(false);
+        mediaView.setVisible(true);
+
+        mediaPlayer.setOnEndOfMedia(() -> {
+            mediaPlayer.dispose();
+            showNextSlide(imageView, mediaView);
+        });
+
+        mediaPlayer.play();
+    }
+
+    public void loadAds(){
+
+        File folder = new File(getClass().getResource("Ads").getPath());
+        if (folder.exists() && folder.isDirectory()) {
+            for (File file : folder.listFiles()) {
+                String fileName = file.getName().toLowerCase();
+                if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png") ||
+                        fileName.endsWith(".mp4") || fileName.endsWith(".mov") || fileName.endsWith(".m4v")) {
+                    adsFiles.add(file);
+                }
+            }
+        }
+    }
     public void selectMusicFolder(){
         songs.clear();
         while (songs.isEmpty() || !accountCreated){
@@ -399,7 +483,8 @@ public class MainPageController implements Initializable {
     }
     private void switchToAdsScene() {
         Platform.runLater(() -> {
-            primaryStage.setScene(mainScene);
+            startSlideshow(primaryStage);
+            //primaryStage.setScene(adsScene);
             primaryStage.setFullScreen(true);
         });
     }

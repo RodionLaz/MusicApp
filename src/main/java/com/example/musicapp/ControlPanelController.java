@@ -168,7 +168,6 @@ public class ControlPanelController implements Initializable {
 
         controlPanelStage.showAndWait();
     }
-
     public void updateDatabase() {
         for (Node node : usersPaneScrolle.getChildren()) {
             if (node instanceof Pane) {
@@ -197,7 +196,6 @@ public class ControlPanelController implements Initializable {
             }
         }
     }
-
     public void showUsers() {
         String strSql = "SELECT * FROM users";
         try (Connection con = DriverManager.getConnection(DB_URL);
