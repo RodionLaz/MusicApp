@@ -1,5 +1,6 @@
-package com.example.musicapp;
+package com.example.musicapp.main;
 
+import com.example.musicapp.ui.controller.MainPageController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -9,10 +10,6 @@ import javafx.stage.Stage;
 
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class App extends Application {
 
@@ -23,7 +20,7 @@ public class App extends Application {
         try {
 
             App.primaryStage = primaryStage;
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("Main-Page.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/musicapp/Main-Page.fxml"));
             Parent root = loader.load();
             mainScene = new Scene(root, 1000, 1000);
 

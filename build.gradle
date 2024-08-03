@@ -24,7 +24,7 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-    mainClass = 'com.example.musicapp.App'
+    mainClass = 'com.example.musicapp.main.App'
 }
 
 javafx {

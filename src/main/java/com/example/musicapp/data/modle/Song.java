@@ -1,8 +1,12 @@
-package com.example.musicapp;
+package com.example.musicapp.data.modle;
+
 
 public class Song {
-
-    private String songName, artistName, albumName, year,  path;
+    private String songName;
+    private String artistName;
+    private String albumName;
+    private String year;
+    private String path;
 
     public Song(String songName, String artistName, String albumName, String year, String path) {
         this.songName = songName;
@@ -51,4 +55,5 @@ public class Song {
     public void setPath(String path) {
         this.path = path;
     }
+
 }
