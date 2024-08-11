@@ -3,19 +3,21 @@ package com.example.musicapp.data.modle;
 public class User {
     private String username;
     private String password;
+    private boolean admin;
     private boolean ads;
     private boolean dir;
     private boolean users;
 
-    public User(String username, String password, boolean ads, boolean dir, boolean users) {
+    public User(String username, String password, boolean ads, boolean dir, boolean users, boolean admin) {
         this.username = username;
         this.password = password;
         this.ads = ads;
         this.dir = dir;
         this.users = users;
+        this.admin = admin;
     }
 
-    public User(String username, boolean ads, boolean dir, boolean users) {
+    public User(String username, boolean ads, boolean dir,boolean admin, boolean users) {
         this.username = username;
         this.ads = ads;
         this.dir = dir;

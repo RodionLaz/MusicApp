@@ -6,6 +6,11 @@
     <top>
         <VBox alignment="CENTER" BorderPane.alignment="CENTER">
             <children>
+                <HBox>
+                    <Label fx:id="usernameLabel"></Label>
+                    <Label fx:id="AdminLabel"></Label>
+                    <Button fx:id="logout">logout</Button>
+                </HBox>
                 <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="10.0">
                     <children>
                         <TextField fx:id="searchField" alignment="CENTER" prefHeight="25.0" prefWidth="217.0" text="" />

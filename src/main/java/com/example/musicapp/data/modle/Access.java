@@ -4,11 +4,17 @@ public class Access {
     private boolean ads;
     private boolean dir;
     private boolean users;
+    private boolean admin;
 
-    public Access(boolean ads, boolean dir, boolean users) {
+    public Access(boolean ads, boolean dir, boolean users,boolean admin) {
         this.ads = ads;
         this.dir = dir;
         this.users = users;
+        this.admin = admin;
+    }
+
+    public boolean hasAdmin() {
+        return admin;
     }
 
     public boolean hasAds() {

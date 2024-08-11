@@ -35,6 +35,8 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import com.example.musicapp.data.database.controller.DatabaseController;
 
+import static com.example.musicapp.ui.view.AlertsView.showErrorMessage;
+
 public class ControlPanelController implements Initializable {
 
     @FXML
@@ -135,9 +137,10 @@ public class ControlPanelController implements Initializable {
         controlPanelStage.showAndWait();
     }
 
+
     private void showCreateAccountDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("CreateAccountDialog.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/musicapp/CreateAccountDialog.fxml"));
             Parent createAccountDialogRoot = loader.load();
             CreateAccountController createAccountController = loader.getController();
 
@@ -157,7 +160,8 @@ public class ControlPanelController implements Initializable {
             }
 
         } catch (IOException e) {
-            e.getStackTrace();
+            e.printStackTrace();
+            showErrorMessage(e.getMessage(),"ERROR");
         }
     }
 
@@ -177,6 +181,8 @@ public class ControlPanelController implements Initializable {
 
         CheckBox usersCheckBox = new CheckBox("Users");
         usersCheckBox.setSelected(user.hasUsersAccess());
+        CheckBox adminCheckBox = new CheckBox("Admin");
+        usersCheckBox.setSelected(user.hasUsersAccess());
 
         Button saveButton = new Button("Save");
         saveButton.setStyle("-fx-background-color: #007bff; -fx-text-fill: white;");
@@ -184,7 +190,8 @@ public class ControlPanelController implements Initializable {
             boolean ads = adsCheckBox.isSelected();
             boolean dir = dirCheckBox.isSelected();
             boolean users = usersCheckBox.isSelected();
-            databaseController.updateUserAccess(user.getUsername(), ads, dir, users);
+            boolean admin = adminCheckBox.isSelected();
+            databaseController.updateUserAccess(user.getUsername(),admin, ads, dir, users);
         });
 
         Button deleteButton = new Button("Delete");

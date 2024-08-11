@@ -10,6 +10,8 @@ import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -56,7 +58,8 @@ import javax.usb.UsbServices;
 import javax.usb.event.UsbServicesEvent;
 import javax.usb.event.UsbServicesListener;
 
-
+import static com.example.musicapp.ui.view.AlertsView.showErrorMessage;
+import static com.example.musicapp.ui.view.AlertsView.showInformationMessage;
 
 
 public class MainPageController implements Initializable {
@@ -77,13 +80,13 @@ public class MainPageController implements Initializable {
     @FXML
     private TextField searchField;
     @FXML
-    private Label texttexttext;
+    private Label texttexttext,usernameLabel,AdminLabel;
     @FXML
     private BorderPane borderPane;
     @FXML
     private HBox messageBox;
     @FXML
-    private Button sortByArtistButton, sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton,clearSelectedSongs;
+    private Button sortByArtistButton, logout,sortByAlbumButton, sortBySongButton, searchButton,transferButton, cancelButton, pauseButton,clearSelectedSongs;
     @FXML
     private ChoiceBox<String> sortBy = new ChoiceBox<>();
     private SelectDiskView selectDiskView;
@@ -108,6 +111,9 @@ public class MainPageController implements Initializable {
     private static final int SLIDE_DURATION = 5;
     private DatabaseController databaseController;
     private MainPageView mainPageView;
+    private Access access;
+    private LoginPageController loginPageController;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         selectDiskView=new SelectDiskView();
@@ -125,41 +131,11 @@ public class MainPageController implements Initializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-       //CPC.show(new Access(true,true,true));
         mainScene =  App.getPrimaryScene();
+        primaryStage =App.getPrimaryStage();
+        loginPageController = LoginPageController.getInstance(primaryStage);
         adminPanelbtn.setOnMouseClicked(e->{
-            try{
-                Stage createAccountStage = new Stage();
-                Pane pane = new Pane();
-                // Create TextFields for input
-                TextField textField1 = new TextField();
-                textField1.setLayoutX(20);
-                textField1.setLayoutY(20);
-                textField1.setPromptText("Enter username");
-
-                TextField textField2 = new TextField();
-                textField2.setLayoutX(20);
-                textField2.setLayoutY(60);
-                textField2.setPromptText("Enter password");
-
-                Button confirm = new Button("Confirm");
-                confirm.setLayoutX(20);
-                confirm.setLayoutY(100);
-                confirm.setOnMouseClicked(e2->{
-                    Access result = databaseController.login(textField1.getText(),textField2.getText());
-                    if (result != null){
-                        CPC.show(result);
-                        createAccountStage.close();
-                    }
-                });
-                pane.getChildren().addAll(textField1, textField2,confirm);
-                Scene createAccountScene = new Scene(pane, 300, 200);
-                createAccountStage.setScene(createAccountScene);
-                createAccountStage.show();
-            }catch (Exception exception){
-
-                exception.printStackTrace();
-            }
+            CPC.show(access);
         });
         loadAds();
         StackPane mainPane = new StackPane();
@@ -303,10 +279,23 @@ public class MainPageController implements Initializable {
 
         });
         listenForUSBEvents();
+        loginPageController.ChangeToLoginScene();
+
     }
 
 
+    public void adminAccses(){
+        if (!access.hasAdmin()){
+            adminPanelbtn.setVisible(false); // Makes the button invisible
+            adminPanelbtn.setManaged(false); // Removes it from the layout management
+            adminPanelbtn.setDisable(true);  // Disables the button, preventing any user interaction
+        }else{
+            adminPanelbtn.setVisible(true);
+            adminPanelbtn.setManaged(true);
+            adminPanelbtn.setDisable(false);
+        }
 
+    }
     public void loadAds(){
 
         File folder = new File(getClass().getResource("/com/example/musicapp/Ads").getPath());
@@ -322,7 +311,7 @@ public class MainPageController implements Initializable {
     }
     public void selectMusicFolder(){
         songs.clear();
-        while (songs.isEmpty() || !accountCreated){
+        while (songs.isEmpty() /*|| !accountCreated*/){
             Stage noSongsPopUp = new Stage();
             noSongsPopUp.initModality(Modality.APPLICATION_MODAL);
 
@@ -440,6 +429,9 @@ public class MainPageController implements Initializable {
         CPC.setMainPageController(this);
 
     }
+    public void setAccess(Access access){
+        this.access = access;
+    }
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
@@ -501,7 +493,7 @@ public class MainPageController implements Initializable {
                         mainPageView.showMessage("A device has been connected");
                         if ("Ads".equals(currentScene)) {
                             System.out.println("switching to main");
-                            switchToMainScene();
+                            loginPageController.ChangeToLoginScene();
                             currentScene = "Main";
                         }
                     });
@@ -516,6 +508,7 @@ public class MainPageController implements Initializable {
                         mainPageView.showMessage("A device has been disconnected");
                         if ("Main".equals(currentScene)) {
                             System.out.println("switching to ads");
+                            access = null;
                             switchToAdsScene();
                             currentScene = "Ads";
                         }
@@ -536,6 +529,7 @@ public class MainPageController implements Initializable {
                 initialEventsProcessed = true;  // Set the flag after initialization is done
             } catch (UsbException | InterruptedException e) {
                 e.printStackTrace();
+                showInformationMessage( e.getMessage(),"INFO");
             }
         });
         usbThread.start();
@@ -631,7 +625,8 @@ public class MainPageController implements Initializable {
                     }
 
                 } catch (IOException | UnsupportedTagException | InvalidDataException | InvalidPathException e) {
-                    LOGGER.log(Level.SEVERE, "Error processing file: " + file.getPath(), e);
+                    e.printStackTrace();
+                    showErrorMessage(e.getMessage(),"ERROR");
                 }
             }
         }

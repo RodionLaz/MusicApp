@@ -10,6 +10,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.musicapp.ui.view.AlertsView.showInformationMessage;
+
 public class DatabaseController {
 
     private static final String DB_URL = "jdbc:sqlite:DB.db";
@@ -42,6 +44,7 @@ public class DatabaseController {
                 String sql = "CREATE TABLE IF NOT EXISTS users (\n"
                         + "    username TEXT PRIMARY KEY,\n"
                         + "    password TEXT NOT NULL,\n"
+                        + "    Admin BOOLEAN,\n"
                         + "    Ads BOOLEAN,\n"
                         + "    Dir BOOLEAN,\n"
                         + "    Users BOOLEAN\n"
@@ -65,7 +68,7 @@ public class DatabaseController {
             return false;
         }
 
-        String sql = "INSERT INTO users (username, password, Ads, Dir, Users) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password,Admin, Ads, Dir, Users) VALUES (?, ?, ?, ?, ?,?)";
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
         try (Connection conn = createDb();
@@ -76,6 +79,7 @@ public class DatabaseController {
             pstmt.setBoolean(3, true);
             pstmt.setBoolean(4, true);
             pstmt.setBoolean(5, true);
+            pstmt.setBoolean(6, true);
 
             pstmt.executeUpdate();
             System.out.println("User inserted successfully.");
@@ -86,13 +90,13 @@ public class DatabaseController {
         }
     }
 
-    public void createAccount(String username, String password, boolean Ads, boolean Dir, boolean Users) {
+    public boolean createAccount(String username, String password,boolean admin, boolean Ads, boolean Dir, boolean Users) {
         if (username.isEmpty() || password.isEmpty()) {
             ControlPanelController.showErrorPopup("Username or password is empty");
-            return;
+            return Ads;
         }
 
-        String sql = "INSERT INTO users (username, password, Ads, Dir, Users) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password,Admin, Ads, Dir, Users) VALUES (?, ?, ?, ?, ?,?)";
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
         try (Connection conn = createDb();
@@ -100,19 +104,22 @@ public class DatabaseController {
 
             pstmt.setString(1, username);
             pstmt.setString(2, hashedPassword);
-            pstmt.setBoolean(3, Ads);
-            pstmt.setBoolean(4, Dir);
-            pstmt.setBoolean(5, Users);
+            pstmt.setBoolean(3, admin);
+            pstmt.setBoolean(4, Ads);
+            pstmt.setBoolean(5, Dir);
+            pstmt.setBoolean(6, Users);
 
             pstmt.executeUpdate();
             System.out.println("User inserted successfully.");
+            showInformationMessage("User has been created", "Succses");
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return Ads;
     }
 
     public Access login(String username, String password) {
-        String sql = "SELECT Ads, Dir, Users, password FROM users WHERE username = ?";
+        String sql = "SELECT Admin, Ads, Dir, Users, password FROM users WHERE username = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -121,13 +128,14 @@ public class DatabaseController {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     String storedHash = rs.getString("password");
+                    boolean admin = rs.getBoolean("Admin");
                     boolean ads = rs.getBoolean("Ads");
                     boolean dir = rs.getBoolean("Dir");
                     boolean users = rs.getBoolean("Users");
 
                     if (BCrypt.checkpw(password, storedHash)) {
                         System.out.println("Login successful!");
-                        return new Access(ads, dir, users);
+                        return new Access(ads, dir, users,admin);
                     } else {
                         ControlPanelController.showErrorPopup("Username or Password are incorrect");
                         return null;
@@ -143,6 +151,23 @@ public class DatabaseController {
         }
     }
 
+    public User getUser(String userName) throws SQLException {
+        String sql = "SELECT * FROM users WHERE username=?";
+        try(Connection con = DriverManager.getConnection(DB_URL);
+        PreparedStatement pstm = con.prepareStatement(sql)){
+            pstm.setString(1,userName);
+            ResultSet rs =  pstm.executeQuery();
+            if (rs.next()){
+                return new User(rs.getString("username"),rs.getString("password"),rs.getBoolean("Admin"),rs.getBoolean("Ads"),rs.getBoolean("Dir"),rs.getBoolean("Users"));
+            }else{
+                return null;
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+
+            return null;
+        }
+    }
     public List<User> getUsers() {
         String sql = "SELECT * FROM users";
         List<User> users = new ArrayList<>();
@@ -156,7 +181,8 @@ public class DatabaseController {
                 boolean ads = rs.getBoolean("Ads");
                 boolean dir = rs.getBoolean("Dir");
                 boolean usersAccess = rs.getBoolean("Users");
-                users.add(new User(username, ads, dir, usersAccess));
+                boolean admin = rs.getBoolean("Users");
+                users.add(new User(username, ads, dir,admin, usersAccess));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -164,8 +190,8 @@ public class DatabaseController {
         return users;
     }
 
-    public void updateUserAccess(String username, boolean ads, boolean dir, boolean users) {
-        String sql = "UPDATE users SET Ads = ?, Dir = ?, Users = ? WHERE username = ?";
+    public void updateUserAccess(String username,boolean admin, boolean ads, boolean dir, boolean users) {
+        String sql = "UPDATE users SET  Ads = ?, Dir = ?, Users = ? WHERE username = ?,Admin = ?";
 
         try (Connection con = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -173,6 +199,7 @@ public class DatabaseController {
             pstmt.setBoolean(2, dir);
             pstmt.setBoolean(3, users);
             pstmt.setString(4, username);
+            pstmt.setBoolean(5, admin);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
