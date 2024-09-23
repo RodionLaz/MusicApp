@@ -1,6 +1,7 @@
 package com.example.musicapp.main;
 
 import com.example.musicapp.ui.controller.MainPageController;
+import com.sun.tools.javac.Main;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,6 +16,7 @@ public class App extends Application {
 
     private static Stage primaryStage;
     private static Scene mainScene;
+    private static MainPageController controller;
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -24,8 +26,8 @@ public class App extends Application {
             Parent root = loader.load();
             mainScene = new Scene(root, 1000, 1000);
 
-            MainPageController controller = loader.getController();
-
+            controller = loader.getController();
+            controller.setMainPageController(controller);
 
             controller.setPrimaryStage(primaryStage);
             controller.setMainScene(mainScene);
@@ -46,6 +48,10 @@ public class App extends Application {
     }
     public static Scene getPrimaryScene() {
         return mainScene;
+    }
+    public static MainPageController getMainPageController(){
+
+     return controller;
     }
     public static void main(String[] args) {
         launch(args);

@@ -1,7 +1,8 @@
 package com.example.musicapp.ui.view;
 
 import com.example.musicapp.data.database.controller.DatabaseController;
-import com.example.musicapp.data.modle.Access;
+import com.example.musicapp.data.modle.User;
+import com.example.musicapp.main.App;
 import com.example.musicapp.ui.controller.LoginPageController;
 import com.sun.glass.ui.View;
 import javafx.application.Platform;
@@ -20,27 +21,28 @@ import static com.example.musicapp.ui.view.AlertsView.showWarningMessage;
 
 public class LoginPageView {
     private Stage primaryStage;
-    private String state ="register";
+    private String state = "register";
     private DatabaseController databaseController;
     private LoginPageController loginPageController;
     private static LoginPageView instanse;
 
-    public LoginPageView(Stage stage){
+    public LoginPageView(Stage stage, LoginPageController loginPageController) {
         this.primaryStage = stage;
-        databaseController = DatabaseController.getInstance();
-        loginPageController = LoginPageController.getInstance();
+        this.databaseController = DatabaseController.getInstance();
+        this.loginPageController = loginPageController;
     }
-    public static LoginPageView getInstance(Stage primaryStage){
-        if (instanse ==null){
-            synchronized (LoginPageView.class){
-                if (instanse ==null){
-                    instanse = new LoginPageView(primaryStage);
-                    return instanse;
+    public static LoginPageView getInstance(Stage primaryStage, LoginPageController loginPageController) {
+        if (instanse == null) {
+            synchronized (LoginPageView.class) {
+                if (instanse == null) {
+                    instanse = new LoginPageView(primaryStage, loginPageController);
                 }
             }
         }
         return instanse;
     }
+
+
     public void showAuthScene(){
         VBox pane = new VBox(10); // 10px spacing between elements
         pane.setPadding(new javafx.geometry.Insets(20)); // 20px padding around the VBox
@@ -95,10 +97,13 @@ public class LoginPageView {
             passwordField.setPromptText("Enter password");
 
             Button loginButton = new Button("Login");
+
             loginButton.setOnMouseClicked(e -> {
-                 Access access = databaseController.login(usernameField.getText(), passwordField.getText());
-                if (access != null) {
-                    loginPageController.setAccess(access);
+                 User user = databaseController.login(usernameField.getText(), passwordField.getText());
+
+                System.out.println("loginPageController"+loginPageController);
+                if (user != null) {
+                    loginPageController.setUser(user);
                 } else {
                     showErrorMessage("Username or Password is incorrect. Please check again", "Login Error");
                 }

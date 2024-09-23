@@ -1,6 +1,6 @@
 package com.example.musicapp.data.database.controller;
 
-import com.example.musicapp.data.modle.Access;
+
 import com.example.musicapp.data.modle.User;
 import com.example.musicapp.ui.controller.ControlPanelController;
 import org.mindrot.jbcrypt.BCrypt;
@@ -118,7 +118,7 @@ public class DatabaseController {
         return Ads;
     }
 
-    public Access login(String username, String password) {
+    public User login(String username, String password) {
         String sql = "SELECT Admin, Ads, Dir, Users, password FROM users WHERE username = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -135,7 +135,7 @@ public class DatabaseController {
 
                     if (BCrypt.checkpw(password, storedHash)) {
                         System.out.println("Login successful!");
-                        return new Access(ads, dir, users,admin);
+                        return new User(username,ads, dir, users,admin);
                     } else {
                         ControlPanelController.showErrorPopup("Username or Password are incorrect");
                         return null;

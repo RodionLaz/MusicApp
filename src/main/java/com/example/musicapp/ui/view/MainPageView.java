@@ -539,5 +539,4 @@ public class MainPageView {
         sequentialTransition.setOnFinished(event -> messageBox.getChildren().remove(messageLabel));
         sequentialTransition.play();
     }
-
 }

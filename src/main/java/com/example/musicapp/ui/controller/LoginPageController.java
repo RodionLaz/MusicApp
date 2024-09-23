@@ -1,44 +1,50 @@
 package com.example.musicapp.ui.controller;
 
-import com.example.musicapp.data.modle.Access;
+
+import com.example.musicapp.data.modle.User;
+import com.example.musicapp.main.App;
 import com.example.musicapp.ui.view.LoginPageView;
 import javafx.stage.Stage;
 
 public class LoginPageController {
-    private Access access;
-    private static LoginPageController instanse;
-    private LoginPageView loginPageView;
-    private Stage primaryStage;
 
-    private LoginPageController(Stage primaryStage){
-        this.primaryStage = primaryStage;
-        loginPageView = LoginPageView.getInstance(primaryStage);
+    private static LoginPageController instance;
+    private LoginPageView loginPageView;
+    private MainPageController mainPageController;
+
+    private LoginPageController(Stage primaryStage) {
+
+        this.loginPageView = LoginPageView.getInstance(primaryStage, this);
     }
-    public static LoginPageController getInstance(Stage primaryStage){
-        if (instanse ==null){
-            synchronized (LoginPageController.class){
-                if (instanse ==null){
-                    instanse = new LoginPageController(primaryStage);
-                    return instanse;
+
+    public void setMainPageController(MainPageController mainPageController) {
+        this.mainPageController = App.getMainPageController();
+    }
+
+    public static LoginPageController getInstance(Stage primaryStage) {
+        if (instance == null) {
+            synchronized (LoginPageController.class) {
+                if (instance == null) {
+                    instance = new LoginPageController(primaryStage);
                 }
             }
         }
-        return instanse;
-    }
-    public static LoginPageController getInstance(){
-        return instanse;
+        return instance;
     }
 
-    public void setAccess(Access access) {
-        this.access = access;
+    public static LoginPageController getInstance() {
+        return instance;
     }
-    public Access getAccess() {
-        return access;
+
+    public void setUser(User user) {
+
+        setMainPageController(App.getMainPageController());
+        System.out.println("mainPageController 2"+mainPageController);
+        mainPageController.switchToMainScene(user);
     }
-    public void ChangeToLoginScene(){
+
+    public void ChangeToLoginScene() {
         loginPageView.showAuthScene();
     }
-    public Access login(Access access){
-        return getAccess();
-    }
+
 }

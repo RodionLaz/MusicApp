@@ -1,8 +1,9 @@
 package com.example.musicapp.ui.controller;
 
+import com.example.musicapp.data.modle.User;
+import com.example.musicapp.data.user.controller.UserController;
 import com.example.musicapp.main.App;
 import com.example.musicapp.data.database.controller.DatabaseController;
-import com.example.musicapp.data.modle.Access;
 import com.example.musicapp.data.modle.Song;
 import com.example.musicapp.ui.view.MainPageView;
 import com.example.musicapp.ui.view.SelectDiskView;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -80,7 +82,11 @@ public class MainPageController implements Initializable {
     @FXML
     private TextField searchField;
     @FXML
-    private Label texttexttext,usernameLabel,AdminLabel;
+    private Label texttexttext;
+    @FXML
+    private Label usernameLabel;
+    @FXML
+    private Label AdminLabel;
     @FXML
     private BorderPane borderPane;
     @FXML
@@ -93,7 +99,7 @@ public class MainPageController implements Initializable {
     public List<Song> SelectedFiles = new ArrayList<>();
     public List<Song> songs = new ArrayList<>();
     private final Logger LOGGER = Logger.getLogger(MainPageController.class.getName());
-    private Stage primaryStage;
+    private static Stage primaryStage;
     private String currentShow =  "Songs";
     private String currentScene = "Ads";
     private String SelectedPath;
@@ -101,7 +107,7 @@ public class MainPageController implements Initializable {
     private List<CheckBox> checkboxes = new ArrayList<>();
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
     private Scene adsScene;
-    private Scene mainScene;
+    private static Scene mainScene;
     private Boolean accountCreated = false;
     private volatile boolean initialEventsProcessed = false;
     private ControlPanelController CPC;
@@ -111,9 +117,9 @@ public class MainPageController implements Initializable {
     private static final int SLIDE_DURATION = 5;
     private DatabaseController databaseController;
     private MainPageView mainPageView;
-    private Access access;
     private LoginPageController loginPageController;
-
+    private MainPageController mainPageController;
+    private UserController UC;
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         selectDiskView=new SelectDiskView();
@@ -134,8 +140,9 @@ public class MainPageController implements Initializable {
         mainScene =  App.getPrimaryScene();
         primaryStage =App.getPrimaryStage();
         loginPageController = LoginPageController.getInstance(primaryStage);
+        loginPageController.setMainPageController(App.getMainPageController());
         adminPanelbtn.setOnMouseClicked(e->{
-            CPC.show(access);
+            CPC.show(UC.getUser());
         });
         loadAds();
         StackPane mainPane = new StackPane();
@@ -276,23 +283,36 @@ public class MainPageController implements Initializable {
                     checkBox.setSelected(false);
                 }
             }
-
         });
         listenForUSBEvents();
         loginPageController.ChangeToLoginScene();
 
+        logout.setOnMouseClicked(e->{
+            UC.clearUser();
+            loginPageController.ChangeToLoginScene();
+        });
     }
-
-
-    public void adminAccses(){
-        if (!access.hasAdmin()){
+    public void setMainPageController(MainPageController mainPageController) {
+        this.mainPageController = mainPageController;
+    }
+    public void adminAccess() {
+        if (UC.getUser()!= null){
+            if (!UC.getUser().isAdmin()) {
+                System.out.println("hiding1 the button");
+                adminPanelbtn.setVisible(false); // Makes the button invisible
+                adminPanelbtn.setManaged(false); // Removes it from the layout management
+                adminPanelbtn.setDisable(true);  // Disables the button, preventing any user interaction
+            } else {
+                System.out.println("showing the hiden button");
+                adminPanelbtn.setVisible(true);
+                adminPanelbtn.setManaged(true);
+                adminPanelbtn.setDisable(false);
+            }
+        }else {
+            System.out.println("hiding user is null");
             adminPanelbtn.setVisible(false); // Makes the button invisible
             adminPanelbtn.setManaged(false); // Removes it from the layout management
             adminPanelbtn.setDisable(true);  // Disables the button, preventing any user interaction
-        }else{
-            adminPanelbtn.setVisible(true);
-            adminPanelbtn.setManaged(true);
-            adminPanelbtn.setDisable(false);
         }
 
     }
@@ -390,13 +410,24 @@ public class MainPageController implements Initializable {
             noSongsPopUp.showAndWait();
         }
     }
-    private void switchToMainScene() {
-        Platform.runLater(() -> {
-            Scene now = primaryStage.getScene();
+    public void switchToMainScene(User user) {
+        Scene now = primaryStage.getScene();
+        if (user != null){
+            usernameLabel.setText("User : " + user.getUsername());
+            AdminLabel.setText("Admin : "+ user.isAdmin());
+            System.out.println("username : " + user.getUsername());
+            UC = UserController.getInstance(user);
+            adminAccess();
+        }else {
+            System.out.println("its null");
+        }
 
-            primaryStage.setScene(mainScene);
-            primaryStage.setFullScreen(true);
+        primaryStage.setScene(mainScene);
+        primaryStage.setFullScreen(true);
+        Platform.runLater(() -> {
+
         });
+
     }
     private void switchToAdsScene() {
         Platform.runLater(() -> {
@@ -428,9 +459,6 @@ public class MainPageController implements Initializable {
         CPC.setRoot(root);
         CPC.setMainPageController(this);
 
-    }
-    public void setAccess(Access access){
-        this.access = access;
     }
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -508,7 +536,7 @@ public class MainPageController implements Initializable {
                         mainPageView.showMessage("A device has been disconnected");
                         if ("Main".equals(currentScene)) {
                             System.out.println("switching to ads");
-                            access = null;
+                           // UC.clearUser();
                             switchToAdsScene();
                             currentScene = "Ads";
                         }

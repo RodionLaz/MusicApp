@@ -1,7 +1,6 @@
 package com.example.musicapp.ui.controller;
 
 import com.example.musicapp.data.database.controller.DatabaseController;
-import com.example.musicapp.data.modle.Access;
 import com.example.musicapp.data.modle.User;
 import com.example.musicapp.ui.controller.CreateAccountController;
 import javafx.application.Platform;
@@ -78,7 +77,7 @@ public class ControlPanelController implements Initializable {
         System.out.println("Controller initialized");
     }
 
-    public void show(Access access) {
+    public void show(User user) {
 
         controlPanelStage = new Stage();
         if (controlPanelScene == null) {
@@ -89,7 +88,7 @@ public class ControlPanelController implements Initializable {
         dirPane.getChildren().clear();
         userBtns.getChildren().clear();
 
-        if (access.hasAds()) {
+        if (user.hasAds()) {
             System.out.println(Objects.requireNonNull(getClass().getResource("/com/example/musicapp/Ads")).getPath());
             getAdFiles(Objects.requireNonNull(getClass().getResource("/com/example/musicapp/Ads")).getPath());
             showFiles();
@@ -110,16 +109,16 @@ public class ControlPanelController implements Initializable {
             controlPanelStage.setScene(controlPanelScene);
         }
 
-        if (access.hasDir()) {
+        if (user.hasDir()) {
             Button changeMusicDir = new Button("Change music folder");
             changeMusicDir.setOnMouseClicked(e -> mainPageController.selectMusicFolder());
             dirPane.getChildren().
                     add(changeMusicDir);
         }
-        if (access.hasUsersAccess()) {
+        if (user.hasUsersAccess()) {
             List<User> users = databaseController.getUsers();
-            for (User user : users) {
-                usersPaneScrolle.getChildren().add(createUserBox(user));
+            for (User user2 : users) {
+                usersPaneScrolle.getChildren().add(createUserBox(user2));
             }
             HBox hBox = new HBox(10);
             hBox.setAlignment(Pos.CENTER);

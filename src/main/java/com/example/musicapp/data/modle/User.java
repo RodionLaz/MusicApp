@@ -19,10 +19,16 @@ public class User {
 
     public User(String username, boolean ads, boolean dir,boolean admin, boolean users) {
         this.username = username;
+        this.admin = admin;
         this.ads = ads;
         this.dir = dir;
         this.users = users;
     }
+
+    public boolean isAdmin() {
+        return admin;
+    }
+
 
     public String getUsername() {
         return username;
