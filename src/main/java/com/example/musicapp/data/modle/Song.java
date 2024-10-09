@@ -1,6 +1,11 @@
 package com.example.musicapp.data.modle;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 public class Song {
     private String songName;
     private String artistName;
@@ -54,6 +59,35 @@ public class Song {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public static List<Song> searchSongs(List<Song> songs, String searchText) {
+        List<Song> results = new ArrayList<>();
+
+        String searchLower = searchText.toLowerCase();
+
+        for (Song song : songs) {
+            if (song.getSongName().toLowerCase().contains(searchLower) ||
+                    song.getArtistName().toLowerCase().contains(searchLower) ||
+                    song.getAlbumName().toLowerCase().contains(searchLower) ||
+                    song.getYear().toLowerCase().contains(searchLower)) {
+                results.add(song);
+            }
+        }
+
+        return results;
+    }
+    public static List<Song> removeDuplicates(List<Song> songs) {
+        Set<String> seenNames = new LinkedHashSet<>(); // LinkedHashSet preserves insertion order
+        List<Song> uniqueSongs = new ArrayList<>();
+
+        for (Song song : songs) {
+            if (seenNames.add(song.getSongName())) {
+                uniqueSongs.add(song);
+            }
+        }
+
+        return uniqueSongs;
     }
 
 }

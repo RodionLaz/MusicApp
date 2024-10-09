@@ -5,20 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ef697795-5aaa-4a1d-8a3e-7b96d557ad7f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/user/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codestream.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codestream.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/Album.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/Artist.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/service/ButtonService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/service/FilesService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/ControlPanelView.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/DB.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/database/controller/DatabaseController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/database/controller/DatabaseController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/Access.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/main/App.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/main/App.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/Song.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/modle/Song.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/data/user/controller/UserController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/ControlPanelController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/ControlPanelController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/LoginPageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/LoginPageController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/MainPageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/MainPageController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/LoginPageView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/LoginPageView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/SelectDiskController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/controller/SelectDiskController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/MainPageView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/MainPageView.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/com/example/musicapp/Main-Page.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/example/musicapp/Main-Page.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/SelectDiskView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/musicapp/ui/view/SelectDiskView.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,17 +87,18 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.MusicAppV3 [:App.main()].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.MusicAppV3 [run].executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;com.google.cloudcode.ide_session_index&quot;: &quot;20240806_0001&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Evi-Tzvi/Desktop/MusicAppV2/MusicApp&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.MusicAppV3 [:App.main()].executor": "Run",
+    "Gradle.MusicAppV3 [run].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.google.cloudcode.ide_session_index": "20240806_0001",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/chalanges/MusicAppV2/MusicApp"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="MusicAppV3 [run]" type="GradleRunConfiguration" factoryName="Gradle" nameIsGenerated="true">
       <ExternalSystemSettings>

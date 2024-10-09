@@ -3,6 +3,8 @@ package com.example.musicapp.ui.controller;
 import com.example.musicapp.data.database.controller.DatabaseController;
 import com.example.musicapp.data.modle.User;
 import com.example.musicapp.ui.controller.CreateAccountController;
+import com.example.musicapp.ui.service.FilesService;
+import com.example.musicapp.ui.view.ControlPanelView;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -39,7 +41,13 @@ import static com.example.musicapp.ui.view.AlertsView.showErrorMessage;
 public class ControlPanelController implements Initializable {
 
     @FXML
-    private TilePane adsPane, usersPane, dirPane, usersPaneScrolle;
+    public TilePane adsPane;
+    @FXML
+    protected TilePane usersPane;
+    @FXML
+    protected TilePane dirPane;
+    @FXML
+    public TilePane usersPaneScrolle;
     @FXML
     private Button addMore, remove;
     @FXML
@@ -52,13 +60,15 @@ public class ControlPanelController implements Initializable {
     private MainPageController mainPageController;
     private Stage controlPanelStage;
     private Scene controlPanelScene;
-    private List<File> adsFile = new ArrayList<>();
+    public List<File> adsFile = new ArrayList<>();
     private List<File> selectedToRemove = new ArrayList<>();
     private Parent root;
-    private DatabaseController databaseController;
+    public DatabaseController databaseController;
+    private ControlPanelView controlPanelView;
 
     public ControlPanelController() {
        this.databaseController  = DatabaseController.getInstance();
+       this.controlPanelView = new ControlPanelView(this);
         if (databaseController == null) {
             System.err.println("DatabaseController instance is null!");
         }
@@ -89,8 +99,7 @@ public class ControlPanelController implements Initializable {
         userBtns.getChildren().clear();
 
         if (user.hasAds()) {
-            System.out.println(Objects.requireNonNull(getClass().getResource("/com/example/musicapp/Ads")).getPath());
-            getAdFiles(Objects.requireNonNull(getClass().getResource("/com/example/musicapp/Ads")).getPath());
+            FilesService.addFilesToListByPath(Objects.requireNonNull(getClass().getResource("/com/example/musicapp/Ads")).getPath(),adsFile);
             showFiles();
             HBox hBox = new HBox(10);
             hBox.setAlignment(Pos.CENTER);
@@ -118,7 +127,7 @@ public class ControlPanelController implements Initializable {
         if (user.hasUsersAccess()) {
             List<User> users = databaseController.getUsers();
             for (User user2 : users) {
-                usersPaneScrolle.getChildren().add(createUserBox(user2));
+                usersPaneScrolle.getChildren().add(controlPanelView.createUserBox(user2));
             }
             HBox hBox = new HBox(10);
             hBox.setAlignment(Pos.CENTER);
@@ -151,11 +160,11 @@ public class ControlPanelController implements Initializable {
             dialogStage.setScene(new Scene(createAccountDialogRoot));
             dialogStage.showAndWait();
 
-            // Refresh user list after closing the dialog
+
             usersPaneScrolle.getChildren().clear();
             List<User> users = databaseController.getUsers();
             for (User user : users) {
-                usersPaneScrolle.getChildren().add(createUserBox(user));
+                usersPaneScrolle.getChildren().add(controlPanelView.createUserBox(user));
             }
 
         } catch (IOException e) {
@@ -164,92 +173,21 @@ public class ControlPanelController implements Initializable {
         }
     }
 
-    private HBox createUserBox(User user) {
-        HBox userBox = new HBox(10);
-        userBox.setAlignment(Pos.CENTER_LEFT);
-        userBox.setPadding(new Insets(10, 10, 10, 10));
 
-        Label usernameLabel = new Label(user.getUsername());
-        usernameLabel.setPrefWidth(150);
-
-        CheckBox adsCheckBox = new CheckBox("Ads");
-        adsCheckBox.setSelected(user.hasAds());
-
-        CheckBox dirCheckBox = new CheckBox("Dir");
-        dirCheckBox.setSelected(user.hasDir());
-
-        CheckBox usersCheckBox = new CheckBox("Users");
-        usersCheckBox.setSelected(user.hasUsersAccess());
-        CheckBox adminCheckBox = new CheckBox("Admin");
-        usersCheckBox.setSelected(user.hasUsersAccess());
-
-        Button saveButton = new Button("Save");
-        saveButton.setStyle("-fx-background-color: #007bff; -fx-text-fill: white;");
-        saveButton.setOnAction(event -> {
-            boolean ads = adsCheckBox.isSelected();
-            boolean dir = dirCheckBox.isSelected();
-            boolean users = usersCheckBox.isSelected();
-            boolean admin = adminCheckBox.isSelected();
-            databaseController.updateUserAccess(user.getUsername(),admin, ads, dir, users);
-        });
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white;");
-        deleteButton.setOnAction(event -> {
-            databaseController.deleteUser(user.getUsername());
-            usersPaneScrolle.getChildren().remove(userBox);
-        });
-
-        userBox.getChildren().addAll(usernameLabel, adsCheckBox, dirCheckBox, usersCheckBox, saveButton, deleteButton);
-
-        return userBox;
-    }
-
-    private void getAdFiles(String path) {
-        File folder = new File(path);
-        File[] files = folder.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isFile()) {
-                    adsFile.add(file);
-                }
-            }
-        }
-    }
 
     private void showFiles() {
         adsPane.getChildren().clear();
         for (File file : adsFile) {
-            VBox fileBox = createFileBox(file);
+            VBox fileBox = controlPanelView.createFileBox(file);
             adsPane.getChildren().add(fileBox);
         }
     }
 
-    private VBox createFileBox(File file) {
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(10, 10, 10, 10));
-        vbox.setAlignment(Pos.CENTER);
-        vbox.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
 
-        Label label = new Label(file.getName());
-        Button button = new Button("Remove");
-        button.setOnAction(event -> {
-            adsFile.remove(file);
-            adsPane.getChildren().remove(vbox);
-        });
-
-        vbox.getChildren().addAll(label, button);
-        return vbox;
-    }
 
     private void addMore() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Add Advertisement");
-        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(controlPanelStage);
-        if (selectedFiles != null) {
-            adsFile.addAll(selectedFiles);
-            showFiles();
-        }
+        FilesService.addFilesToListByFileChooser(adsFile,controlPanelStage);
+        showFiles();
     }
 
     private void removefunc() {

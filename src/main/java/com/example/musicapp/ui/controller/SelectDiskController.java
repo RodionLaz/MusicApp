@@ -28,6 +28,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static com.example.musicapp.ui.service.FilesService.createTransferTask;
+
 public class SelectDiskController {
     private SelectDiskView view;
     private AtomicBoolean isPaused = new AtomicBoolean(false);
@@ -57,57 +59,12 @@ public class SelectDiskController {
     }
 
     private void startTransferTask() {
-        copyTask = createTransferTask();
+        copyTask = createTransferTask(selectedFiles.stream().map(song -> new File(song.getPath())).collect(Collectors.toList()),selectedRoot,isPaused);
         view.bindTask(copyTask);
         executorService.submit(copyTask);
     }
 
-    private Task<Void> createTransferTask() {
-        List<File> selectedSongsFile = selectedFiles.stream().map(song -> new File(song.getPath())).collect(Collectors.toList());
 
-        return new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                long totalSize = selectedSongsFile.stream().mapToLong(File::length).sum();
-                long copiedSize = 0;
-
-                for (File file : selectedSongsFile) {
-                    if (isCancelled()) break;
-
-                    while (isPaused.get()) {
-                        Thread.sleep(100);
-                    }
-
-                    Path sourcePath = file.toPath();
-                    try {
-                        Mp3File mp3file = new Mp3File(file.getPath());
-                        if (mp3file.hasId3v2Tag()) {
-                            ID3v2 id3v2Tag = mp3file.getId3v2Tag();
-                            String artist = id3v2Tag.getArtist();
-                            String album = id3v2Tag.getAlbum();
-
-                            Path targetDir = Paths.get(selectedRoot.getPath(), "Music", artist, album);
-                            if (!Files.exists(targetDir)) {
-                                Files.createDirectories(targetDir);
-                            }
-
-                            Path targetPath = targetDir.resolve(sourcePath.getFileName());
-                            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                            copiedSize += Files.size(sourcePath);
-
-                            updateProgress(copiedSize, totalSize);
-                            updateMessage(file.getName());
-
-                            Thread.sleep(500);
-                        }
-                    } catch (IOException | UnsupportedTagException e) {
-                        e.printStackTrace();
-                    }
-                }
-                return null;
-            }
-        };
-    }
 
     private void listenForUSBEvents() {
         UsbServicesListener listener = new UsbServicesListener() {

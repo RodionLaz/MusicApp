@@ -5,18 +5,13 @@ import com.example.musicapp.data.user.controller.UserController;
 import com.example.musicapp.main.App;
 import com.example.musicapp.data.database.controller.DatabaseController;
 import com.example.musicapp.data.modle.Song;
+import com.example.musicapp.ui.service.FilesService;
 import com.example.musicapp.ui.view.MainPageView;
 import com.example.musicapp.ui.view.SelectDiskView;
-import javafx.animation.PauseTransition;
-import javafx.animation.SequentialTransition;
-import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -24,35 +19,23 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.*;
 
-import java.sql.SQLOutput;
 import java.util.*;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-import com.mpatric.mp3agic.*;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.scene.media.MediaView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 
-import javax.swing.*;
-import javax.swing.filechooser.FileSystemView;
 import javax.usb.UsbDevice;
 import javax.usb.UsbException;
 import javax.usb.UsbHostManager;
@@ -60,7 +43,8 @@ import javax.usb.UsbServices;
 import javax.usb.event.UsbServicesEvent;
 import javax.usb.event.UsbServicesListener;
 
-import static com.example.musicapp.ui.view.AlertsView.showErrorMessage;
+import static com.example.musicapp.data.modle.Song.searchSongs;
+import static com.example.musicapp.ui.service.FilesService.*;
 import static com.example.musicapp.ui.view.AlertsView.showInformationMessage;
 
 
@@ -102,7 +86,7 @@ public class MainPageController implements Initializable {
     private static Stage primaryStage;
     private String currentShow =  "Songs";
     private String currentScene = "Ads";
-    private String SelectedPath;
+    private String selectedPath;
     private boolean initialized = false;
     private List<CheckBox> checkboxes = new ArrayList<>();
     private Map<String, Boolean> checkboxStateMap = new HashMap<>();
@@ -144,16 +128,16 @@ public class MainPageController implements Initializable {
         adminPanelbtn.setOnMouseClicked(e->{
             CPC.show(UC.getUser());
         });
-        loadAds();
+        FilesService.addFilesToListByPath(FilesService.class.getResource("/com/example/musicapp/Ads").getPath(),adsFiles);
         StackPane mainPane = new StackPane();
         adsScene = new Scene(mainPane);
         //switchToAdsScene();
-        //organize();
+        //organize(selectedPath);
 
         searchButton.setOnMouseClicked(event -> {
             String Search = searchField.getText();
             if(searchField.getText().isEmpty()){
-                songs = findMP3(SelectedPath);
+                songs = findMP3sInDirectory(selectedPath);
                 mainPageView.showitemsBySongsOrder(songs,checkboxes,checkboxStateMap,SelectedFiles);
                 return;
             }
@@ -298,36 +282,23 @@ public class MainPageController implements Initializable {
     public void adminAccess() {
         if (UC.getUser()!= null){
             if (!UC.getUser().isAdmin()) {
-                System.out.println("hiding1 the button");
+                System.out.println("the user is not admin hidibg");
                 adminPanelbtn.setVisible(false); // Makes the button invisible
                 adminPanelbtn.setManaged(false); // Removes it from the layout management
                 adminPanelbtn.setDisable(true);  // Disables the button, preventing any user interaction
             } else {
-                System.out.println("showing the hiden button");
+                System.out.println("the user is admin");
                 adminPanelbtn.setVisible(true);
                 adminPanelbtn.setManaged(true);
                 adminPanelbtn.setDisable(false);
             }
         }else {
-            System.out.println("hiding user is null");
+            System.out.println("the user is null hiding");
             adminPanelbtn.setVisible(false); // Makes the button invisible
             adminPanelbtn.setManaged(false); // Removes it from the layout management
             adminPanelbtn.setDisable(true);  // Disables the button, preventing any user interaction
         }
 
-    }
-    public void loadAds(){
-
-        File folder = new File(getClass().getResource("/com/example/musicapp/Ads").getPath());
-        if (folder.exists() && folder.isDirectory()) {
-            for (File file : folder.listFiles()) {
-                String fileName = file.getName().toLowerCase();
-                if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png") ||
-                        fileName.endsWith(".mp4") || fileName.endsWith(".mov") || fileName.endsWith(".m4v")) {
-                    adsFiles.add(file);
-                }
-            }
-        }
     }
     public void selectMusicFolder(){
         songs.clear();
@@ -397,8 +368,8 @@ public class MainPageController implements Initializable {
 
                 if (selectedDirectory != null) {
                     System.out.println("Selected Directory: " + selectedDirectory.getAbsolutePath());
-                    SelectedPath = selectedDirectory.getAbsolutePath();
-                    songs = findMP3(selectedDirectory.getAbsolutePath());
+                    selectedPath = selectedDirectory.getAbsolutePath();
+                    songs = findMP3sInDirectory(selectedDirectory.getAbsolutePath());
                     mainPageView.showitemsBySongsOrder(songs,checkboxes,checkboxStateMap,SelectedFiles);
                     noSongsPopUp.close(); // Close the popup after selecting the folder
 
@@ -411,11 +382,9 @@ public class MainPageController implements Initializable {
         }
     }
     public void switchToMainScene(User user) {
-        Scene now = primaryStage.getScene();
         if (user != null){
             usernameLabel.setText("User : " + user.getUsername());
             AdminLabel.setText("Admin : "+ user.isAdmin());
-            System.out.println("username : " + user.getUsername());
             UC = UserController.getInstance(user);
             adminAccess();
         }else {
@@ -436,22 +405,6 @@ public class MainPageController implements Initializable {
             primaryStage.setFullScreen(true);
         });
     }
-    public List<Song> searchSongs(List<Song> songs, String searchText) {
-        List<Song> results = new ArrayList<>();
-
-        String searchLower = searchText.toLowerCase();
-
-        for (Song song : songs) {
-            if (song.getSongName().toLowerCase().contains(searchLower) ||
-                    song.getArtistName().toLowerCase().contains(searchLower) ||
-                    song.getAlbumName().toLowerCase().contains(searchLower) ||
-                    song.getYear().toLowerCase().contains(searchLower)) {
-                results.add(song);
-            }
-        }
-
-        return results;
-    }
     public void initControlPanel() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/musicapp/Control-Panel.fxml"));
         Parent root = loader.load();
@@ -466,49 +419,6 @@ public class MainPageController implements Initializable {
     }
     public void setMainScene(Scene mainScene) {
         this.mainScene = mainScene;
-    }
-    public static List<Song> removeDuplicates(List<Song> songs) {
-        Set<String> seenNames = new LinkedHashSet<>(); // LinkedHashSet preserves insertion order
-        List<Song> uniqueSongs = new ArrayList<>();
-
-        for (Song song : songs) {
-            if (seenNames.add(song.getSongName())) { // Add returns true if the name was not already present
-                uniqueSongs.add(song);
-            }
-        }
-
-        return uniqueSongs;
-    }
-    public List<Song> findMP3(String directoryPath) {
-        List<Song> songs = new ArrayList<>();
-        JFileChooser fileChooser = new JFileChooser();
-        FileSystemView fileSystemView = fileChooser.getFileSystemView();
-        LOGGER.info("Default Music Directory: " + directoryPath);
-        List<File> mp3Files = new ArrayList<>();
-
-        // Recursively search for MP3s
-        searchForMP3s(new File(directoryPath), mp3Files);
-
-        // Handle the list of found MP3s (e.g., display information)
-        for (File mp3File : mp3Files) {
-            try {
-                Mp3File mp3info = new Mp3File(mp3File.getPath());
-                if (mp3info.hasId3v2Tag()) {
-                    ID3v2 id3v2Tag = mp3info.getId3v2Tag();
-                    Song song = new Song(id3v2Tag.getTitle(), id3v2Tag.getArtist(), id3v2Tag.getAlbum(),
-                            id3v2Tag.getYear(), mp3File.getPath());
-                    songs.add(song);
-
-                }
-            } catch (InvalidDataException e) {
-                LOGGER.log(Level.SEVERE, "InvalidDataException: No MPEG frames found in file: " + mp3File.getPath(), e);
-            } catch (UnsupportedTagException e) {
-                LOGGER.log(Level.SEVERE, "UnsupportedTagException: " + e.getMessage(), e);
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "IOException: " + e.getMessage(), e);
-            }
-        }
-        return songs;
     }
     public void listenForUSBEvents() {
         UsbServicesListener listener = new UsbServicesListener() {
@@ -562,101 +472,5 @@ public class MainPageController implements Initializable {
         });
         usbThread.start();
     }
-    private void searchForMP3s(File directory, List<File> mp3Files) {
-        if (directory == null || !directory.exists() || !directory.isDirectory()) {
-            LOGGER.warning("Invalid directory: " + directory);
-            return; // Handle invalid directory
-        }
 
-        File[] files = directory.listFiles();
-
-        if (files == null) {
-            LOGGER.warning("No files found in directory: " + directory);
-            return; // Handle potential null pointer
-        }
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                searchForMP3s(file, mp3Files); // Recursively search subdirectories
-            } else if (file.isFile() && file.getName().toLowerCase().endsWith(".mp3")) {
-                mp3Files.add(file);
-            }
-        }
-    }
-    private String sanitizeFileName(String name) {
-        return name.replaceAll("[\\\\/:*?\"<>|]", "_");
-    }
-    public void organize() {
-        String musicDirectoryPath = SelectedPath;
-        File musicDirectory = new File(musicDirectoryPath);
-
-        if (!musicDirectory.exists() || !musicDirectory.isDirectory()) {
-            LOGGER.warning("Music directory does not exist or is not a directory.");
-            return;
-        }
-
-        processDirectory(musicDirectory, musicDirectory);
-    }
-    private void processDirectory(File directory, File baseDirectory) {
-        File[] files = directory.listFiles();
-
-        if (files == null) {
-            LOGGER.warning("Failed to list files in directory: " + directory.getPath());
-            return;
-        }
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                processDirectory(file, baseDirectory);
-            } else if (file.getName().toLowerCase().endsWith(".mp3")) {
-                try {
-                    Mp3File mp3file = new Mp3File(file.getPath());
-                    if (mp3file.hasId3v2Tag()) {
-                        ID3v2 id3v2Tag = mp3file.getId3v2Tag();
-                        String[] artists = id3v2Tag.getArtist().split("/");
-                        String album = id3v2Tag.getAlbum();
-
-                        if (artists == null || artists[0].isEmpty()) {
-                            artists[0] = "Unknown Artist";
-                        }
-                        if (album == null || album.isEmpty()) {
-                            album = "Unknown Album";
-                        }
-
-                        for (int i = 0; i < artists.length; i++) {
-                            artists[i] = sanitizeFileName(artists[i]);
-                        }
-
-                        album = sanitizeFileName(album);
-
-                        for (String artist : artists) {
-                            File artistDir = new File(baseDirectory, artist);
-                            if (!artistDir.exists()) {
-                                artistDir.mkdirs();
-                            }
-
-                            File albumDir = new File(artistDir, album);
-                            if (!albumDir.exists()) {
-                                albumDir.mkdirs();
-                            }
-
-                            File targetFile = new File(albumDir,sanitizeFileName(file.getName()));
-                            if (!targetFile.exists()) {
-                                Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                                LOGGER.info("Moved file: " + file.getName() + " to " + targetFile.getPath());
-                            } else {
-                                LOGGER.info("File already exists in target directory: " + targetFile.getPath());
-                            }
-                        }
-                    }else {
-                        LOGGER.log(Level.SEVERE, "File Has no tag: " + file.getPath());
-                    }
-
-                } catch (IOException | UnsupportedTagException | InvalidDataException | InvalidPathException e) {
-                    e.printStackTrace();
-                    showErrorMessage(e.getMessage(),"ERROR");
-                }
-            }
-        }
-    }
 }

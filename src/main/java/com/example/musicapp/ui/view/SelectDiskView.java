@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public class SelectDiskView {
     private Button pauseButton;
     private ProgressBar progressBar;
     private Label currentSongLabel;
-    private List<CheckBox> checkBoxes;
+    private List<CheckBox> checkBoxes = new ArrayList<>();
 
     public SelectDiskView() {
         this.vbox = new VBox(10);

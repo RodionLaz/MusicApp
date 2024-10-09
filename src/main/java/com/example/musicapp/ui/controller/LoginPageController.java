@@ -2,6 +2,7 @@ package com.example.musicapp.ui.controller;
 
 
 import com.example.musicapp.data.modle.User;
+import com.example.musicapp.data.user.controller.UserController;
 import com.example.musicapp.main.App;
 import com.example.musicapp.ui.view.LoginPageView;
 import javafx.stage.Stage;
@@ -11,7 +12,7 @@ public class LoginPageController {
     private static LoginPageController instance;
     private LoginPageView loginPageView;
     private MainPageController mainPageController;
-
+    private UserController UC;
     private LoginPageController(Stage primaryStage) {
 
         this.loginPageView = LoginPageView.getInstance(primaryStage, this);
@@ -37,8 +38,10 @@ public class LoginPageController {
     }
 
     public void setUser(User user) {
-
+        UC = UserController.getInstance(user);
+        UserController.setUser(user);
         setMainPageController(App.getMainPageController());
+
         System.out.println("mainPageController 2"+mainPageController);
         mainPageController.switchToMainScene(user);
     }

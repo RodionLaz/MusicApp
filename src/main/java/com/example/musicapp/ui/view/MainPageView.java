@@ -25,7 +25,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static com.example.musicapp.ui.controller.MainPageController.removeDuplicates;
+import static com.example.musicapp.data.modle.Song.removeDuplicates;
 
 
 public class MainPageView {
@@ -539,4 +539,5 @@ public class MainPageView {
         sequentialTransition.setOnFinished(event -> messageBox.getChildren().remove(messageLabel));
         sequentialTransition.play();
     }
+
 }

@@ -5,13 +5,13 @@ import com.example.musicapp.data.modle.User;
 public class UserController {
 
     private static UserController instance;
-    private User user;
+    private static User user;
     private UserController(User user){
         this.user = user;
     }
 
-    public void clearUser(){
-        this.user = null;
+    public static void clearUser(){
+        user = null;
     }
     public static UserController getInstance(User user){
         if (instance == null){
@@ -40,8 +40,9 @@ public class UserController {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public static void setUser(User user2) {
+        user = user2;
     }
+
 
 }
